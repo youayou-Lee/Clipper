@@ -39,3 +39,6 @@
 - **#4 ✅ Windows 部分(2026-09-05,PR #17 → 67bb916)**:`scripts/e2e_platform.py` 跨平台剪贴板 e2e 脚本(--self-test/--read/--write,零第三方依赖);Windows 真机(you-win)实测——往返 PASS(含中文 token)、写方向用户桌面确认、读方向逐字符一致;关键技术结论:ssh 会话剪贴板隔离,须用计划任务投射交互会话;修 PS5.1 stdin 码页乱码(写方向 base64 载荷,reviewer Important)+ 新增 8 项单测(总 73)。macOS 延后,有设备再拆子 Issue;reviewer 两个非阻塞 nit 记 Issue #18
 - **#10 ✅(2026-09-06,PR #19)**:webhook payload ts 带时区偏移+微秒精度;test_webhook 去重(Fail 服务/FakeBackend 抽 fixture)
 - **#15 ✅(2026-09-06,PR #21)**:pre-push 钩子打磨——`uv run --locked` 快速失败;区分"测试红"与"uv/环境失败"两种拒绝语义(以 pytest 输出特征判定);.venv 回退注释明确仅 POSIX(Windows 走 uv);三种路径本地实测
+- **#19 ✅(2026-09-06,PR #22)**:e2e 脚本移除死代码 parser.error(required 互斥组已兜底);_ps() 缺失时友好报错而非裸 TypeError(+2 单测,总 75)
+- **#27 ✅(2026-09-06,PR #28)**:README 重写——定位改为"复现 Clipper 木马核心机制并开源供分析+制定应对策略",含免责声明、复现范围表、5 条示例应对策略、威胁研究一节(#23);reviewer 提醒补回 webhook 隐私警告
+- **研究体系建立(2026-09-06)**:父 Issue #23 + 三个子 Issue(#24 分发/#25 免杀/#26 加载运行),防御视角红线,产物收 docs/research/
