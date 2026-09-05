@@ -26,3 +26,10 @@
 - 替换链路(splice / match_exact / _handle_content)尚无单元测试,仅手工验证
 - Windows/macOS 的 read/write 无端到端验证
 - 告警只有控制台,无 webhook 等远程通知渠道
+
+## v0.2 进展(#2 ✅ 2026-09-05,PR #6 → d096fd2)
+
+- **替换链路单元测试落地**:+37 用例(总 57,pytest 兼容运行存量 20)——splice 等长/头尾保留/循环取用/退化路径,match_exact 三地址类型+7 种非精确拒绝,_handle_content exact/contains/写回失败/防循环,safe.load 固化与 0600
+- **pytest 迁移**:pyproject dev extra,CI 命令改 `pytest -v`(job 更名 tests),pre-push 钩子与文档同步
+- **仓库转公开**,分支保护生效(required check `tests` + strict + enforce_admins),此前由本地 pre-push 钩子兜底
+- v0.2 剩余:#3 webhook 告警、#4 Windows/macOS 端到端
