@@ -1,0 +1,34 @@
+name: 缺陷(Bug)
+description: 报告错误行为——先写复现测试,再修
+labels: [bug]
+body:
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现步骤
+      description: 最小复现,含使用的命令与输入文本(地址可打码,保留首尾 8 位)
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为 vs 实际行为
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 平台与后端
+      options:
+        - Linux / X11 (xclip)
+        - Linux / Wayland (wl-clipboard)
+        - Windows
+        - macOS
+    validations:
+      required: true
+  - type: checkboxes
+    id: regression
+    attributes:
+      label: 修复纪律
+      options:
+        - label: 修复前先在 tests/ 落一个复现测试(红),修复后该测试永久留在回归集
