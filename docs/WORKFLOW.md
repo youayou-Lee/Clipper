@@ -2,7 +2,7 @@
 
 > 本项目(单人 + AI 协作)的实际工作规范,参照 coding-agent 的 `docs/WORKFLOW.md` 制定。
 > 原则:**main 随时可发布,每个变更有据可查,一切以测试数据为准**。
-> 配套设施:CI(unittest,PR 强制)、分支保护(required check)、Issue 模板、Milestone。
+> 配套设施:CI(pytest,PR 强制)、分支保护(required check)、Issue 模板、Milestone。
 
 ## 0. 计划表三层:在哪、怎么看
 
@@ -37,7 +37,7 @@ gh issue list --milestone "v0.2" --state all
 - [ ] 混了就 `git rebase -i` 拆
 
 ### Step 4 自测 —— 三层(详见 §3)
-- [ ] L1 unittest 全绿(与 CI 同套)
+- [ ] L1 pytest 全绿(与 CI 同套)
 - [ ] 涉及剪贴板读/写行为 → 本机端到端验证(Linux:xclip 实测),输出留痕贴进 PR
 - [ ] 平台相关改动 → 说明未覆盖平台的风险
 
@@ -73,7 +73,7 @@ gh issue list --milestone "v0.2" --state all
 
 | 层 | 测什么 | 怎么跑 | 何时跑 | 合格标准 |
 |---|---|---|---|---|
-| **L1 单元** | 纯逻辑:检测/校验和(base58、bech32、EIP-55)、normalize、safe.splice、match_exact | unittest,`tests/test_*.py` | 每次 commit 前 + CI 强制 | 全绿;每公开函数有正常例+边界例 |
+| **L1 单元** | 纯逻辑:检测/校验和(base58、bech32、EIP-55)、normalize、safe.splice、match_exact | pytest,`tests/test_*.py` | 每次 commit 前 + CI 强制 | 全绿;每公开函数有正常例+边界例 |
 | **L2 组件** | 剪贴板读→扫→替换→写回链路(fake backend) | scripted 场景,零外部依赖 | 改动 watch/_handle_content 的 PR | 覆盖:检出替换 / 不检出不动 / 写回失败 / 完全匹配拒绝多余字符;改写后不循环告警 |
 | **L3 端到端** | 真实剪贴板(本机 xclip/wl-copy) | `scripts/demo.py` 8 场景 + 手工验证 | 涉及剪贴板行为的 PR | demo 全 PASS;实际粘贴内容符合预期,输出贴 PR |
 
@@ -107,7 +107,7 @@ gh pr checks                       # CI 状态
 gh pr merge --squash --delete-branch
 
 # 测试
-.venv/bin/python -m unittest discover -s tests -v   # L1+L2
+.venv/bin/pytest tests/ -v   # L1+L2
 .venv/bin/python scripts/demo.py                    # L3 端到端(本机)
 
 # 版本收口

@@ -88,7 +88,7 @@ clipper history          # 查看最近检出的地址
 ## 测试
 
 ```bash
-.venv/bin/python -m unittest discover -s tests -v   # 单元测试
+.venv/bin/pytest tests/ -v   # 测试(pytest,兼容 unittest 风格)
 .venv/bin/python scripts/demo.py                    # 8 个真实场景的端到端演示(自检)
 ```
 
