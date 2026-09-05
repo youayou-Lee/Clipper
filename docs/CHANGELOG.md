@@ -38,3 +38,4 @@
 - **#13 ✅(2026-09-05,PR #14 → 021e26b)**:统一 uv 工具链——uv.lock 入库,CI 改 setup-uv + `uv run pytest`,pre-push 钩子优先 uv(回退 .venv),文档命令统一 `uv sync`/`uv run`;冗余 dev extra 已删(reviewer Minor 采纳),钩子打磨记 Issue #15。65 用例全绿,CI 9s。另:#12 收口 .gitignore(.local/ 本机设备信息不入库),you-win(Windows 测试机)SSH 免密打通,Issue #4 范围收窄为 Windows(macOS 延后)
 - **#4 ✅ Windows 部分(2026-09-05,PR #17 → 67bb916)**:`scripts/e2e_platform.py` 跨平台剪贴板 e2e 脚本(--self-test/--read/--write,零第三方依赖);Windows 真机(you-win)实测——往返 PASS(含中文 token)、写方向用户桌面确认、读方向逐字符一致;关键技术结论:ssh 会话剪贴板隔离,须用计划任务投射交互会话;修 PS5.1 stdin 码页乱码(写方向 base64 载荷,reviewer Important)+ 新增 8 项单测(总 73)。macOS 延后,有设备再拆子 Issue;reviewer 两个非阻塞 nit 记 Issue #18
 - **#10 ✅(2026-09-06,PR #19)**:webhook payload ts 带时区偏移+微秒精度;test_webhook 去重(Fail 服务/FakeBackend 抽 fixture)
+- **#15 ✅(2026-09-06,PR #21)**:pre-push 钩子打磨——`uv run --locked` 快速失败;区分"测试红"与"uv/环境失败"两种拒绝语义(以 pytest 输出特征判定);.venv 回退注释明确仅 POSIX(Windows 走 uv);三种路径本地实测
