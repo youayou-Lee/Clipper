@@ -31,13 +31,18 @@ _WARNING = "请注意检查该地址！！！"
 
 
 def _handle_content(text, db_path, skip_unchecked, backend=None, safe_address=None,
-                    contains=False):
+                    contains=False, webhook=None):
     findings = scan_text(text)
     alertable = filter_alertable(findings, include_unchecked=not skip_unchecked)
     if not alertable:
         return None
     alert(alertable)
     record(alertable, db_path)
+    if webhook:
+        from .notify import build_payload, send_webhook
+
+        if not send_webhook(webhook, build_payload(alertable, text)):
+            print(f"[clipper] webhook 通知失败: {webhook}", file=sys.stderr, flush=True)
     if backend is None or not safe_address:
         return None
     if contains:
@@ -81,6 +86,9 @@ def main(argv=None):
         action="store_true",
         help="包含模式:文本中任何位置检出地址都替换(默认仅剪贴板整体为一个地址时替换)",
     )
+    p_watch.add_argument(
+        "--webhook", help="检出地址时向该 URL POST JSON 通知(3s 超时,失败仅警告)"
+    )
 
     p_scan = sub.add_parser("scan", help="扫描当前剪贴板或指定文本")
     p_scan.add_argument("--text", help="扫描指定文本而不是当前剪贴板")
@@ -115,7 +123,7 @@ def main(argv=None):
             interval=args.interval,
             on_content=lambda text: _handle_content(
                 text, args.db, args.skip_unchecked, backend, safe_address,
-                contains=args.contains,
+                contains=args.contains, webhook=args.webhook,
             ),
         )
         watcher.run()
