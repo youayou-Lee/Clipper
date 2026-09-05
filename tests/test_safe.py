@@ -1,6 +1,7 @@
 """safe.splice 与固定地址固化路径的单元测试。"""
 
 import os
+import sys
 
 import pytest
 
@@ -79,6 +80,7 @@ class TestLoad:
         addr = safe.load(path=cfg)
         assert match_exact(addr) is not None
 
+    @pytest.mark.skipif(sys.platform == "win32", reason="NTFS 无 POSIX 权限位,0600 仅 POSIX 有意义")
     def test_file_permission_0600(self, tmp_path):
         cfg = tmp_path / "sub" / "safe_address"
         safe.load(path=cfg)
