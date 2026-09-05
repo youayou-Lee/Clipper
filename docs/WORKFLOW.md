@@ -110,8 +110,8 @@ gh pr checks                       # CI 状态
 gh pr merge --squash --delete-branch
 
 # 测试
-.venv/bin/pytest tests/ -v   # L1+L2
-.venv/bin/python scripts/demo.py                    # L3 端到端(本机)
+uv run pytest tests/ -v   # L1+L2(uv 管理 .venv)
+uv run python scripts/demo.py                       # L3 端到端(本机)
 
 # 版本收口
 git tag v0.x.0 && git push --tags

@@ -8,8 +8,7 @@
 ## 安装
 
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install -e .
+uv sync          # 创建/接管 .venv 并安装(含 dev 依赖);没有 uv 先: pip install uv 或官方安装脚本
 ```
 
 剪贴板后端依赖(按你的显示协议二选一):
@@ -90,8 +89,8 @@ clipper history          # 查看最近检出的地址
 ## 测试
 
 ```bash
-.venv/bin/pytest tests/ -v   # 测试(pytest,兼容 unittest 风格)
-.venv/bin/python scripts/demo.py                    # 8 个真实场景的端到端演示(自检)
+uv run pytest tests/ -v   # 测试
+uv run python scripts/demo.py   # 8 个真实场景的端到端演示(自检)
 ```
 
 测试向量来自 BIP-173 与 EIP-55 官方规范。
