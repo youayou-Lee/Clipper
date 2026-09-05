@@ -66,6 +66,82 @@ def test_unreachable_url_returns_false():
     assert send_webhook("http://127.0.0.1:9/hook", {"x": 1}, timeout=0.5) is False
 
 
+def test_server_500_returns_false(server):
+    # 非 2xx(HTTPError):同样返回 False,不上抛
+    class Fail(BaseHTTPRequestHandler):
+        def do_POST(self):
+            self.rfile.read(int(self.headers.get("Content-Length", 0)))
+            self.send_response(500)
+            self.end_headers()
+
+        def log_message(self, *args):
+            pass
+
+    srv = HTTPServer(("127.0.0.1", 0), Fail)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        assert send_webhook(
+            f"http://127.0.0.1:{srv.server_address[1]}/hook", {"x": 1}
+        ) is False
+    finally:
+        srv.shutdown()
+
+
+class TestMainFlowUnaffectedByWebhookFailure:
+    """验收标准 #2:webhook 失败不得影响告警/记录/替换写回主流程。"""
+
+    def _backend_with(self, fixed, url):
+        from clipper import safe
+        from clipper.watcher import ClipboardWatcher
+
+        class FakeBackend:
+            name = "fake"
+
+            def __init__(self):
+                self.content = BTC
+
+            def read(self):
+                return self.content
+
+            def write(self, text):
+                self.content = text
+                return True
+
+        b = FakeBackend()
+        w = ClipboardWatcher(
+            b,
+            on_content=lambda t: _handle_content(
+                t, None, False, b, safe.load(path=fixed / "safe_address"),
+                webhook=url,
+            ),
+        )
+        w.poll_once()
+        return b
+
+    def test_unreachable_webhook_rewrite_still_happens(self, tmp_path):
+        b = self._backend_with(tmp_path, "http://127.0.0.1:9/hook")
+        assert b.content != BTC  # 主流程(替换写回)未受影响
+
+    def test_server_500_rewrite_still_happens(self, tmp_path):
+        class Fail(BaseHTTPRequestHandler):
+            def do_POST(self):
+                self.rfile.read(int(self.headers.get("Content-Length", 0)))
+                self.send_response(500)
+                self.end_headers()
+
+            def log_message(self, *args):
+                pass
+
+        srv = HTTPServer(("127.0.0.1", 0), Fail)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        try:
+            url = f"http://127.0.0.1:{srv.server_address[1]}/hook"
+            b = self._backend_with(tmp_path, url)
+            assert b.content != BTC
+        finally:
+            srv.shutdown()
+
+
 def test_handle_content_without_webhook_makes_no_request(server, tmp_path):
     from clipper import safe
     from clipper.watcher import ClipboardWatcher

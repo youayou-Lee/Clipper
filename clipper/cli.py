@@ -40,9 +40,12 @@ def _handle_content(text, db_path, skip_unchecked, backend=None, safe_address=No
     record(alertable, db_path)
     if webhook:
         from .notify import build_payload, send_webhook
+        from urllib.parse import urlsplit
 
         if not send_webhook(webhook, build_payload(alertable, text)):
-            print(f"[clipper] webhook 通知失败: {webhook}", file=sys.stderr, flush=True)
+            # 只显示 scheme+host,避免用户 URL 里带的 token 进日志
+            host = urlsplit(webhook).netloc
+            print(f"[clipper] webhook 通知失败: {host}", file=sys.stderr, flush=True)
     if backend is None or not safe_address:
         return None
     if contains:

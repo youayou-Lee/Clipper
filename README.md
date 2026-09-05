@@ -42,8 +42,9 @@ clipper history          # 查看最近检出的地址
 避免改坏正常文本。加 `--contains` 切换到包含模式:文本中任何位置检出地址都原位替换。
 
 `watch` 常用参数:`--interval 0.5`(轮询秒数)、`--skip-unchecked`(不告警未校验地址)、`--db PATH`、
-`--webhook URL`(检出地址时 POST JSON:`{ts, findings[], original_text}`,3s 超时,失败仅打 stderr 警告)。
-`paste` 也支持 `--skip-unchecked`、`--db PATH`。
+`--webhook URL`(检出地址时 POST JSON:`{ts, findings[], original_text}`,3s 超时,失败仅打 stderr 警告,
+不影响替换写回)。注意:payload 含剪贴板**完整原文**,请只发往可信端点(建议 HTTPS);
+通知仅覆盖触发告警的地址。`paste` 也支持 `--skip-unchecked`、`--db PATH`。
 
 ## 检测原理:两层,校验和是唯一闸门
 
