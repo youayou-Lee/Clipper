@@ -1,96 +1,57 @@
-# Clipper — 剪贴板守护
+# Clipper — 复现 Clipper 木马,研究应对
 
-一个跨平台的剪贴板安全工具:**在粘贴之前**检测剪贴板中的比特币/以太坊地址并告警,
-用来对抗剪贴板劫持类攻击(clipper 木马会把你复制的收款地址替换成攻击者的地址)。
+本项目复现 **Clipper 木马**(剪贴板劫持木马)的核心机制并开源,供公众分析其原理,
+在此基础上制定与验证应对策略;仓库同时给出**示例应对策略**的实际实现。
 
+> **免责声明**:本项目仅用于防御研究、安全教育与意识提升。
+> 仓库中的"替换写回"等机制默认工作在**本机、防护者视角**(替换目标是本机固化的安全地址,
+> 历史记录保留原始地址供核对)。严禁将其用于攻击他人——那正是本项目要对抗的行为。
 
+## Clipper 木马是什么
 
-## 安装
+剪贴板劫持木马常驻受害者机器,监控剪贴板:一旦发现比特币/以太坊地址,立刻在粘贴前
+把它替换成攻击者的地址。受害者视觉上无法分辨(地址同样合法、通过校验和),转账于是
+打进攻击者钱包。它不需要提权、不需要联网回传,是门槛极低却极其阴险的攻击。
 
-```bash
-uv sync          # 创建/接管 .venv 并安装(含 dev 依赖);没有 uv 先: pip install uv 或官方安装脚本
-```
+## 本仓库复现了什么
 
-剪贴板后端依赖(按你的显示协议二选一):
-
-```bash
-sudo apt install xclip          # X11
-sudo apt install wl-clipboard   # Wayland
-```
-
-## 使用
-
-```bash
-clipper watch            # 常驻监控:检出地址时告警,并把"原文+提示"写回剪贴板
-clipper paste            # 代替 Ctrl+V:原样输出剪贴板原文,检出地址时追加提示
-clipper scan             # 立即扫描当前剪贴板
-clipper scan --text "..."# 扫描任意文本(调试用)
-clipper scan --json      # JSON 输出
-clipper history          # 查看最近检出的地址
-```
-
-**核心防护形态**是 `clipper watch` 常驻后台:一旦检出加密货币地址,除了控制台告警,
-还会把剪贴板里的地址原位替换成一个固定地址的变体并写回剪贴板——
-替换规则是保留原地址前 4 位和后 4 位不变,中间换成固定地址的中段,总长度不变
-(固定地址由 `clipper address` 首次随机生成并固化)。替换后的地址保留了原地址的
-头尾形态、且长度与原文一致,排版不会跳变;但它不再是通过校验和的有效地址,
-也不会与固定地址本身混淆。改写只发生一次,不会循环触发告警;历史记录里保存的仍是原始地址。
-
-替换默认工作在**完全匹配模式**:剪贴板内容(去除首尾空白后)必须整体恰好是一个
-合法地址才会替换——地址后面多粘一个字符、或夹在句子里的地址都只告警、不动内容,
-避免改坏正常文本。加 `--contains` 切换到包含模式:文本中任何位置检出地址都原位替换。
-
-`watch` 常用参数:`--interval 0.5`(轮询秒数)、`--skip-unchecked`(不告警未校验地址)、`--db PATH`、
-`--webhook URL`(检出地址时 POST JSON:`{ts, findings[], original_text}`,3s 超时,失败仅打 stderr 警告,
-不影响替换写回)。注意:payload 含剪贴板**完整原文**,请只发往可信端点(建议 HTTPS);
-通知仅覆盖触发告警的地址。`paste` 也支持 `--skip-unchecked`、`--db PATH`。
-
-## 检测原理:两层,校验和是唯一闸门
-
-1. **候选提取**(宽松正则):Base58(`1`/`3` 开头)、Bech32(`bc1`/`tb1`)、EVM(`0x`+40 位十六进制)。
-2. **真实验证**:
-   - BTC Base58 → Base58Check 双 SHA256 校验和
-   - BTC Bech32 → BIP-173/350 多项式校验和 + 见证版本/长度规则(v0: 20/32 字节;v1: 32 字节)
-   - ETH → EIP-55 大小写校验和(keccak256)
-
-只有通过校验和的地址才告警,误报率接近零。
-`0x` 前缀 40 位十六进制天然排除了 git commit SHA(无 `0x` 前缀)和交易哈希(64 位)。
-
-**EIP-55 无法校验的情况**:纯小写/纯大写地址没有大小写校验信息。默认仍告警
-(标为"未校验"——漏报比偶发打扰更糟),用 `--skip-unchecked` 可关闭。
-
-## 内容清洗
-
-扫描前会剥离零宽字符(ZWSP/ZWNJ/ZWJ/Word Joiner/BOM/软连字符)和全部空白,
-既修复从聊天工具/PDF 复制出来的换行地址,也防御隐形字符混淆。
-
-## 平台支持
-
-| 平台 | 后端 | 说明 |
+| 机制 | 位置 | 说明 |
 |---|---|---|
-| Linux | `wl-paste`(Wayland)/ `xclip`、`xsel`(X11) | 本机开发环境 |
-| Windows | ctypes 调用 Win32 剪贴板 API | 无第三方依赖 |
-| macOS | `pbpaste` | 系统自带 |
+| 地址检测(校验和闸门) | `clipper/detect/` | Base58Check / BIP-173/350 / EIP-55,与真实木马同源的识别能力 |
+| 零宽字符清洗 | `clipper/normalize.py` | 真实样本用隐形字符规避检测,这里演示如何剥掉 |
+| 剪贴板读/写 | `clipper/platforms/` | Windows(Win32 API)/ macOS / Linux 三端 |
+| **替换写回**(核心机制) | `clipper/safe.py` + `cli.py` | 复现"粘贴前改写地址"的完整链路——防护视角:替换为本机固化的安全地址变体 |
+| 告警与审计 | `clipper/alert.py` + `history.py` | 控制台告警 + sqlite 历史(保留原始地址) |
+| webhook 通知 | `clipper/notify.py` | 检出事件外推 |
+| 端到端验证 | `scripts/` | 真机剪贴板读写验证脚本、8 场景演示 |
 
-告警:仅控制台输出(所有平台一致,无弹窗依赖)。
+## 示例应对策略(随仓库提供)
 
-## 历史
+1. **完全匹配替换**(默认):剪贴板整体恰好是一个合法地址才替换——保原地址头 4 尾 4、
+   中间换成固定安全地址中段、等长;替换物不再是有效地址,真转账会被钱包拒绝。
+2. **替换后告警 + 历史审计**:控制台明示替换发生,sqlite 保留原始地址供事后核对。
+3. **粘贴时校验**:`clipper paste` 代替 Ctrl+V,输出原文并对检出地址追加提示。
+4. **webhook 外推**:检出事件推送到手机/服务端(见 `--webhook`)。
+5. **威胁研究驱动的检测**(进行中):见下方威胁研究一节。
 
-检出的地址写入本地 sqlite(默认 `~/.local/share/clipper/history.db`,权限 0600)。
-地址本身不是机密(公钥),但历史能帮你事后核对"我当时要转给谁"。
-
-## 路线图
-
-- [ ] Windows/macOS 端到端测试
-- [ ] 写入者进程归因(X11 可查 selection owner → PID;Wayland 受限;Windows 可查 clipboard owner)
-- [ ] 浏览器扩展联动:粘贴进网页输入框时二次确认
-- [ ] 托盘 GUI、webhook 告警
-
-## 测试
+## 快速开始
 
 ```bash
-uv run pytest tests/ -v   # 测试
-uv run python scripts/demo.py   # 8 个真实场景的端到端演示(自检)
+uv sync                                  # 或先安装 uv:pip install uv
+uv run clipper watch                     # 常驻监控:检出地址→告警→替换写回
+uv run clipper address                   # 查看本机固定的安全地址
+uv run pytest tests/ -v                  # 测试
+uv run python scripts/demo.py            # 8 场景端到端演示
 ```
 
-测试向量来自 BIP-173 与 EIP-55 官方规范。
+剪贴板后端依赖:Windows/macOS 内置;Linux 需 `xclip`(X11)或 `wl-clipboard`(Wayland)。
+
+## 威胁研究
+
+攻击端全链路(分发 → 免杀 → 加载运行)的系统分析在 [Issue #23](https://github.com/youayou-Lee/Clipper/issues/23)
+跟踪,产物见 `docs/research/`(进行中)。所有研究均为防御视角,带出处。
+
+## 工程规范
+
+本项目走 Issue 驱动的 GitHub Flow(见 `docs/WORKFLOW.md`):先立 Issue(可测试验收标准)
+→ feat 分支 → 测试绿才 commit → PR 四要素 → CI 绿 + 代码审核 → squash merge → CHANGELOG。
