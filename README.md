@@ -49,8 +49,11 @@ uv run python scripts/demo.py            # 8 场景端到端演示
 
 ## 威胁研究
 
-攻击端全链路(分发 → 免杀 → 加载运行)的系统分析在 [Issue #23](https://github.com/youayou-Lee/Clipper/issues/23)
-跟踪,产物将收录于 `docs/research/`(进行中)。所有研究均为防御视角,带出处。
+方法论:**先以攻击者视角构建完整攻击链,再切防守者视角做检测点映射与对抗方案**。
+跟踪:[Issue #23](https://github.com/youayou-Lee/Clipper/issues/23)。产物:
+
+- [`docs/research/attack-chain.md`](docs/research/attack-chain.md) — 攻击链全景(分发/免杀/加载/持久化/劫持/变现,全部厂商报告溯源)
+- [`docs/research/defense-mapping.md`](docs/research/defense-mapping.md) — 逐环节检测点映射、对策分级与攻防不对称分析
 
 ## 工程规范
 
