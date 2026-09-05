@@ -14,3 +14,6 @@ dist/
 
 # Local data
 *.db
+
+# 本机环境信息(含局域网拓扑,不入库)
+.local/
