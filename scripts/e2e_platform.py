@@ -10,7 +10,9 @@ Linux uses xclip/wl-copy. Exit code 0 = success.
 """
 
 import argparse
+import base64
 import secrets
+import shutil
 import subprocess
 import sys
 
@@ -18,22 +20,33 @@ import sys
 PS_UTF8 = "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
 
 
+def _ps():
+    return shutil.which("powershell") or shutil.which("pwsh")
+
+
 def win_read():
     out = subprocess.run(
-        ["powershell", "-NoProfile", "-Command", PS_UTF8 + " Get-Clipboard -Raw"],
+        [_ps(), "-NoProfile", "-Command", PS_UTF8 + " Get-Clipboard -Raw"],
         capture_output=True,
     )
     if out.returncode != 0:
         return None
-    return out.stdout.decode("utf-8", errors="replace").rstrip("\r\n") or None
+    text = out.stdout.decode("utf-8", errors="replace")
+    if text.endswith("\r\n"):
+        text = text[:-2]
+    return text or None
 
 
 def win_write(text):
-    proc = subprocess.run(
-        ["powershell", "-NoProfile", "-Command", PS_UTF8 + " Set-Clipboard -Value $input"],
-        input=text.encode("utf-8"),
-        capture_output=True,
+    # 文本经 base64 进入命令(PowerShell 5.1 的管道 stdin 按控制台码页解码,
+    # 非 ASCII 会乱码);base64 字符集本身注入安全。
+    b64 = base64.b64encode(text.encode("utf-8")).decode("ascii")
+    cmd = (
+        PS_UTF8
+        + f" Set-Clipboard -Value ([Text.Encoding]::UTF8.GetString("
+        + f"[Convert]::FromBase64String('{b64}')))"
     )
+    proc = subprocess.run([_ps(), "-NoProfile", "-Command", cmd], capture_output=True)
     return proc.returncode == 0
 
 
@@ -77,9 +90,10 @@ def backend():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--self-test", action="store_true", help="write known text, read back, compare")
-    parser.add_argument("--read", action="store_true", help="print current clipboard content")
-    parser.add_argument("--write", help="put the given text on the clipboard")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--self-test", action="store_true", help="write known text, read back, compare")
+    group.add_argument("--read", action="store_true", help="print current clipboard content")
+    group.add_argument("--write", help="put the given text on the clipboard")
     args = parser.parse_args()
 
     read, write = backend()
@@ -88,11 +102,11 @@ def main():
         print("--- clipboard content start ---")
         print(content if content is not None else "(unreadable/empty)")
         print("--- clipboard content end ---")
-        return
+        sys.exit(0 if content is not None else 1)
     if args.write is not None:
         sys.exit(0 if write(args.write) else 1)
     if args.self_test:
-        token = f"clipper-e2e-{secrets.token_hex(8)}"
+        token = f"clipper-e2e-剪贴板验证-{secrets.token_hex(8)}"
         if not write(token):
             print("FAIL: write returned error")
             sys.exit(1)
