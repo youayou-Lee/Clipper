@@ -22,10 +22,11 @@ def test_alert_survives_gbk_stdout(monkeypatch):
 
 
 def test_stderr_reconfigured(monkeypatch):
-    import contextlib
+    from clipper.alert import safe_console
 
-    gbk_err = io.TextIOWrapper(io.BytesIO(), encoding="gbk", errors="strict")
-    monkeypatch.setattr(sys, "stderr", gbk_err)
-    with contextlib.suppress(Exception):
-        sys.stderr.write("\u26a0 test\n")
-    sys.stderr.flush()  # 修复后 replace 生效,不抛
+    gbk = io.TextIOWrapper(io.BytesIO(), encoding="gbk", errors="strict")
+    monkeypatch.setattr(sys, "stderr", gbk)
+    safe_console()
+    sys.stderr.write("\u26a0 test\n")  # 修复前此处抛 UnicodeEncodeError,不得 suppress
+    sys.stderr.flush()
+    assert "⚠" not in gbk.buffer.getvalue().decode("gbk")
