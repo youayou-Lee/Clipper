@@ -16,6 +16,9 @@
 4. **修 bug 先写复现测试**(红)再修,修完该测试永久留在回归集。
 5. **PR 描述四要素**:动机(关联 Issue 用 `Refs #N`,不用 `Closes`)/ 改动(逐模块一句话)/
    验证(测试与实测数据)/ 风险与回滚。CI 绿才许 merge。
+   **merge 前必须过审核**:用 `requesting-code-review` skill(obra/superpowers)派发 reviewer 子代理
+   (只给 diff + 需求,不给会话历史);意见处理按 `receiving-code-review` skill——
+   Critical 立即修,Important merge 前修,Minor 记 Issue;reviewer 说错了要有依据地反驳。
 6. **只用 squash merge**:`gh pr merge --squash --delete-branch`。
 7. **合并当天更新 `docs/CHANGELOG.md`**,并核对 Milestone 进度。
 
