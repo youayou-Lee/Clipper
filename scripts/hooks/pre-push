@@ -1,0 +1,8 @@
+#!/bin/sh
+# 铁律:测试红不 push。返回非零即中止 push(勿用 --no-verify 绕过)。
+echo "[pre-push] 运行全量测试..."
+.venv/bin/python -m unittest discover -s tests 2>&1 || {
+  echo "[pre-push] ✗ 测试红,push 已拒绝。先修绿再推。"
+  exit 1
+}
+echo "[pre-push] ✓ 测试全绿,放行"
