@@ -53,6 +53,7 @@
 | 计划任务(非标准路径动作) | 【端】任务计划事件 | 监控任务注册事件(Event ID 4698),动作指向 AppData/Public 即告警(Microsoft 案例落在 Public\Documents) | ✅ |
 | 进程链形态(lnk→wscript/powershell→异常子进程) | 【行】EDR 进程树 | 进程链规则是 EDR 的主场;开源侧可用 Sysmon 配置(EvtID 1/11/13)搭等价检测 | ✅ Sysmon 配置可开源 |
 | 注入 svchost(即使 syscall 直调) | 【行】内核遥测 | ETW TI / Sysmon EventID 8/10(跨进程线程创建/内存访问) | Sysmon ✅ |
+| 浏览器扩展持久化(attack-chain §3.2-#5) | 【端】扩展清单与权限 | 审计 clipboardWrite/读取权限的扩展安装与更新;企业可白名单扩展 | 商店治理+企业策略 ✅ |
 
 ## 4. 剪贴板劫持与变现 → 检测点与对策
 
@@ -65,6 +66,7 @@
 | 粘贴前的地址本身 | 【端】剪贴板内容 | **本项目**:粘贴前校验和检测 + 完全匹配替换为无效变体 + 告警/历史/webhook(见 README 示例应对策略) | ✅ 已实现 |
 | 替换地址的首尾保形模式 | 【人】肉眼 | 保头尾替换让地址"看起来没变"——防御侧的对策是**粘贴时刻提示**(本项目 watch/paste 行为)而非依赖肉眼 | ✅ 已实现 |
 | 收款地址池复用 | 【链】链上数据 | 攻击者 15,500+ 地址池轮换,但链上可聚类归集;交易所/钱包厂商可内置已知 clipper 地址黑名单 | 钱包/交易所侧 ✅ |
+| Android 剪贴板监听(attack-chain §4.1) | 【端】应用权限 | Android 12+ 已限制后台读剪贴板,系统层收紧是主防线;侧载应用权限审计;仅官方商店安装 | 平台已收紧;教育 ✅ |
 | 助记词/私钥顺带窃取(微软案例) | 【端】+【人】 | 用户教育:助记词永不粘贴/截图;剪贴板清空习惯;硬件钱包确认屏核对 | 教育 ✅ |
 
 ## 5. 攻防不对称(诚实记录)
@@ -77,7 +79,7 @@
 
 ## 6. 转化为本项目的可落地项(Issue 化)
 
-- [x] #R1 写入者进程归因(X11 selection owner / Windows clipboard owner)——代码层已具雏形:`clipper/platforms/` 抽象层可查询 selection/clipboard owner,待产品化
+- [~] #R1 写入者进程归因(X11 selection owner / Windows clipboard owner)——代码层已有雏形:`clipper/platforms/` 抽象层可查询 selection/clipboard owner,待产品化
 - [ ] #R2 Defender Exclusions 注册表键监控告警(最小工具,本地跑)
 - [ ] #R3 Sysmon 基线配置(覆盖 §3 全部检测点:进程链/任务注册/注入事件)
 - [ ] #R4 粘贴目标校验的浏览器扩展联动(本表 §4 防线向浏览器的延伸,立 Issue 排期)
