@@ -15,9 +15,12 @@ import subprocess
 import sys
 
 
+PS_UTF8 = "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;"
+
+
 def win_read():
     out = subprocess.run(
-        ["powershell", "-NoProfile", "-Command", "Get-Clipboard"],
+        ["powershell", "-NoProfile", "-Command", PS_UTF8 + " Get-Clipboard -Raw"],
         capture_output=True,
     )
     if out.returncode != 0:
@@ -27,7 +30,7 @@ def win_read():
 
 def win_write(text):
     proc = subprocess.run(
-        ["powershell", "-NoProfile", "-Command", "Set-Clipboard -Value $input"],
+        ["powershell", "-NoProfile", "-Command", PS_UTF8 + " Set-Clipboard -Value $input"],
         input=text.encode("utf-8"),
         capture_output=True,
     )
