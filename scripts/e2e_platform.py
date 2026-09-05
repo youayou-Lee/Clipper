@@ -25,8 +25,12 @@ def _ps():
 
 
 def win_read():
+    ps = _ps()
+    if not ps:
+        print("FAIL: 未找到 powershell/pwsh", file=sys.stderr)
+        return None
     out = subprocess.run(
-        [_ps(), "-NoProfile", "-Command", PS_UTF8 + " Get-Clipboard -Raw"],
+        [ps, "-NoProfile", "-Command", PS_UTF8 + " Get-Clipboard -Raw"],
         capture_output=True,
     )
     if out.returncode != 0:
@@ -40,13 +44,17 @@ def win_read():
 def win_write(text):
     # 文本经 base64 进入命令(PowerShell 5.1 的管道 stdin 按控制台码页解码,
     # 非 ASCII 会乱码);base64 字符集本身注入安全。
+    ps = _ps()
+    if not ps:
+        print("FAIL: 未找到 powershell/pwsh", file=sys.stderr)
+        return False
     b64 = base64.b64encode(text.encode("utf-8")).decode("ascii")
     cmd = (
         PS_UTF8
         + f" Set-Clipboard -Value ([Text.Encoding]::UTF8.GetString("
         + f"[Convert]::FromBase64String('{b64}')))"
     )
-    proc = subprocess.run([_ps(), "-NoProfile", "-Command", cmd], capture_output=True)
+    proc = subprocess.run([ps, "-NoProfile", "-Command", cmd], capture_output=True)
     return proc.returncode == 0
 
 
@@ -116,7 +124,6 @@ def main():
             return
         print(f"FAIL: wrote {token!r}, read back {back!r}")
         sys.exit(1)
-    parser.error("choose one of --self-test / --read / --write")
 
 
 if __name__ == "__main__":

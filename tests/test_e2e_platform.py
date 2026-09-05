@@ -91,3 +91,15 @@ def test_self_test_mismatch_exit_1(monkeypatch, capsys):
         e2e.main()
     assert exc.value.code == 1
     assert "FAIL" in capsys.readouterr().out
+
+
+def test_win_read_without_powershell(monkeypatch, capsys):
+    monkeypatch.setattr(e2e.shutil, "which", lambda name: None)
+    assert e2e.win_read() is None
+    assert "未找到 powershell" in capsys.readouterr().err
+
+
+def test_win_write_without_powershell(monkeypatch, capsys):
+    monkeypatch.setattr(e2e.shutil, "which", lambda name: None)
+    assert e2e.win_write("x") is False
+    assert "未找到 powershell" in capsys.readouterr().err
