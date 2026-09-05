@@ -28,17 +28,18 @@
 ## 示例应对策略(随仓库提供)
 
 1. **完全匹配替换**(默认):剪贴板整体恰好是一个合法地址才替换——保原地址头 4 尾 4、
-   中间换成固定安全地址中段、等长;替换物不再是有效地址,真转账会被钱包拒绝。
+   中间换成固定安全地址中段、等长;替换物的校验和不再通过,真转账会被钱包拒绝。
 2. **替换后告警 + 历史审计**:控制台明示替换发生,sqlite 保留原始地址供事后核对。
 3. **粘贴时校验**:`clipper paste` 代替 Ctrl+V,输出原文并对检出地址追加提示。
 4. **webhook 外推**:检出事件推送到手机/服务端(见 `--webhook`)。
+   注意:payload 含剪贴板**完整原文**,请只发往可信端点(建议 HTTPS)。
 5. **威胁研究驱动的检测**(进行中):见下方威胁研究一节。
 
 ## 快速开始
 
 ```bash
 uv sync                                  # 或先安装 uv:pip install uv
-uv run clipper watch                     # 常驻监控:检出地址→告警→替换写回
+uv run clipper watch                     # 常驻监控:检出地址→告警→替换写回(默认完全匹配模式,其余见 --help)
 uv run clipper address                   # 查看本机固定的安全地址
 uv run pytest tests/ -v                  # 测试
 uv run python scripts/demo.py            # 8 场景端到端演示
@@ -49,7 +50,7 @@ uv run python scripts/demo.py            # 8 场景端到端演示
 ## 威胁研究
 
 攻击端全链路(分发 → 免杀 → 加载运行)的系统分析在 [Issue #23](https://github.com/youayou-Lee/Clipper/issues/23)
-跟踪,产物见 `docs/research/`(进行中)。所有研究均为防御视角,带出处。
+跟踪,产物将收录于 `docs/research/`(进行中)。所有研究均为防御视角,带出处。
 
 ## 工程规范
 
