@@ -12,9 +12,6 @@ dependencies = ["pycryptodome>=3.19"]
 [project.scripts]
 clipper = "clipper.cli:main"
 
-[project.optional-dependencies]
-dev = ["pytest>=8"]
-
 [dependency-groups]
 dev = ["pytest>=8"]
 

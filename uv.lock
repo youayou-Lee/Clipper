@@ -10,22 +10,13 @@ dependencies = [
     { name = "pycryptodome" },
 ]
 
-[package.optional-dependencies]
-dev = [
-    { name = "pytest" },
-]
-
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "pycryptodome", specifier = ">=3.19" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
-]
-provides-extras = ["dev"]
+requires-dist = [{ name = "pycryptodome", specifier = ">=3.19" }]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8" }]
