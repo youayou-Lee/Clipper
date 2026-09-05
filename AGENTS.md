@@ -11,7 +11,7 @@
    `git switch main && git pull --ff-only`。
 3. **测试红不 commit 不 push**:commit/push 前必跑(钩子会拦截 push):
    ```bash
-   .venv/bin/python -m unittest discover -s tests -v
+   .venv/bin/pytest tests/ -v
    ```
 4. **修 bug 先写复现测试**(红)再修,修完该测试永久留在回归集。
 5. **PR 描述四要素**:动机(关联 Issue 用 `Refs #N`,不用 `Closes`)/ 改动(逐模块一句话)/
@@ -21,7 +21,7 @@
 
 ## 测试
 
-- L1 单元:`tests/`,unittest 风格(未来迁移 pytest 后新测试用 pytest 风格)
+- L1 单元:`tests/`,pytest 风格(存量 unittest 用例由 pytest 兼容运行)
 - L2 组件:fake clipboard backend 走 watch/_handle_content 链路
 - L3 端到端:`.venv/bin/python scripts/demo.py`(8 场景)+ 本机 xclip 实测
 
