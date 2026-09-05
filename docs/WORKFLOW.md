@@ -43,6 +43,9 @@ gh issue list --milestone "v0.2" --state all
 
 ### Step 5 PR
 - [ ] 描述四要素:动机(`Refs #N`)/ 改动(逐模块一句话)/ 验证(数据)/ 风险与回滚
+- [ ] **审核阶段**:merge 前用 `requesting-code-review` skill(obra/superpowers)派发 reviewer 子代理
+      (只给 BASE..HEAD diff + 需求描述,不给会话历史);意见按 `receiving-code-review` 处理:
+      Critical 立即修,Important merge 前修,Minor 记 Issue;reviewer 说错要有依据地反驳
 - [ ] CI 绿(分支保护强制,不许绕);merge 前自己通读一遍 diff
 
 ### Step 6 合并收尾
