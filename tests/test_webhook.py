@@ -31,15 +31,69 @@ class Collector(BaseHTTPRequestHandler):
         pass
 
 
+class Always500(BaseHTTPRequestHandler):
+    def do_POST(self):
+        self.rfile.read(int(self.headers.get("Content-Length", 0)))
+        self.send_response(500)
+        self.end_headers()
+
+    def log_message(self, *args):
+        pass
+
+
+def _start(handler):
+    srv = HTTPServer(("127.0.0.1", 0), handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv
+
+
 @pytest.fixture
 def server():
     Collector.body = None
     Collector.headers = None
-    srv = HTTPServer(("127.0.0.1", 0), Collector)
-    thread = threading.Thread(target=srv.serve_forever, daemon=True)
-    thread.start()
+    srv = _start(Collector)
     yield f"http://127.0.0.1:{srv.server_address[1]}/hook"
     srv.shutdown()
+
+
+@pytest.fixture
+def fail_server():
+    srv = _start(Always500)
+    yield f"http://127.0.0.1:{srv.server_address[1]}/hook"
+    srv.shutdown()
+
+
+class FakeBackend:
+    name = "fake"
+
+    def __init__(self):
+        self.content = BTC
+
+    def read(self):
+        return self.content
+
+    def write(self, text):
+        self.content = text
+        return True
+
+
+@pytest.fixture
+def fixed(tmp_path):
+    from clipper import safe
+
+    return safe.load(path=tmp_path / "safe_address")
+
+
+def _watch_once(backend, fixed, webhook=None):
+    from clipper.watcher import ClipboardWatcher
+
+    w = ClipboardWatcher(
+        backend,
+        on_content=lambda t: _handle_content(
+            t, None, False, backend, fixed, webhook=webhook
+        ),
+    )
+    w.poll_once()
 
 
 def test_payload_shape():
@@ -49,7 +103,11 @@ def test_payload_shape():
     assert payload["findings"] == [
         {"chain": "bitcoin", "kind": "P2PKH", "confidence": "verified", "address": BTC}
     ]
-    assert payload["ts"]  # 时间戳存在
+    ts = payload["ts"]
+    assert ts  # 时间戳存在
+    # 带时区偏移 + 微秒精度(0.8s 轮询间隔下同秒事件也能区分先后)
+    assert ("+" in ts[10:] or "-" in ts[10:] or "Z" in ts)
+    assert "." in ts
 
 
 def test_send_reaches_local_server(server):
@@ -66,136 +124,36 @@ def test_unreachable_url_returns_false():
     assert send_webhook("http://127.0.0.1:9/hook", {"x": 1}, timeout=0.5) is False
 
 
-def test_server_500_returns_false(server):
+def test_server_500_returns_false(fail_server):
     # 非 2xx(HTTPError):同样返回 False,不上抛
-    class Fail(BaseHTTPRequestHandler):
-        def do_POST(self):
-            self.rfile.read(int(self.headers.get("Content-Length", 0)))
-            self.send_response(500)
-            self.end_headers()
-
-        def log_message(self, *args):
-            pass
-
-    srv = HTTPServer(("127.0.0.1", 0), Fail)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
-    try:
-        assert send_webhook(
-            f"http://127.0.0.1:{srv.server_address[1]}/hook", {"x": 1}
-        ) is False
-    finally:
-        srv.shutdown()
+    assert send_webhook(fail_server, {"x": 1}) is False
 
 
 class TestMainFlowUnaffectedByWebhookFailure:
     """验收标准 #2:webhook 失败不得影响告警/记录/替换写回主流程。"""
 
-    def _backend_with(self, fixed, url):
-        from clipper import safe
-        from clipper.watcher import ClipboardWatcher
-
-        class FakeBackend:
-            name = "fake"
-
-            def __init__(self):
-                self.content = BTC
-
-            def read(self):
-                return self.content
-
-            def write(self, text):
-                self.content = text
-                return True
-
+    def test_unreachable_webhook_rewrite_still_happens(self, fixed):
         b = FakeBackend()
-        w = ClipboardWatcher(
-            b,
-            on_content=lambda t: _handle_content(
-                t, None, False, b, safe.load(path=fixed / "safe_address"),
-                webhook=url,
-            ),
-        )
-        w.poll_once()
-        return b
-
-    def test_unreachable_webhook_rewrite_still_happens(self, tmp_path):
-        b = self._backend_with(tmp_path, "http://127.0.0.1:9/hook")
+        _watch_once(b, fixed, webhook="http://127.0.0.1:9/hook")
         assert b.content != BTC  # 主流程(替换写回)未受影响
 
-    def test_server_500_rewrite_still_happens(self, tmp_path):
-        class Fail(BaseHTTPRequestHandler):
-            def do_POST(self):
-                self.rfile.read(int(self.headers.get("Content-Length", 0)))
-                self.send_response(500)
-                self.end_headers()
-
-            def log_message(self, *args):
-                pass
-
-        srv = HTTPServer(("127.0.0.1", 0), Fail)
-        threading.Thread(target=srv.serve_forever, daemon=True).start()
-        try:
-            url = f"http://127.0.0.1:{srv.server_address[1]}/hook"
-            b = self._backend_with(tmp_path, url)
-            assert b.content != BTC
-        finally:
-            srv.shutdown()
+    def test_server_500_rewrite_still_happens(self, fixed, fail_server):
+        b = FakeBackend()
+        _watch_once(b, fixed, webhook=fail_server)
+        assert b.content != BTC
 
 
-def test_handle_content_without_webhook_makes_no_request(server, tmp_path):
-    from clipper import safe
-    from clipper.watcher import ClipboardWatcher
-
-    fixed = safe.load(path=tmp_path / "safe_address")
-
-    class FakeBackend:
-        name = "fake"
-
-        def __init__(self):
-            self.content = BTC
-
-        def read(self):
-            return self.content
-
-        def write(self, text):
-            self.content = text
-            return True
-
+def test_handle_content_without_webhook_makes_no_request(server, fixed):
     b = FakeBackend()
     # 不传 webhook:正常完成替换写回,本地服务器零请求
-    w = ClipboardWatcher(
-        b, on_content=lambda t: _handle_content(t, None, False, b, fixed)
-    )
-    w.poll_once()
+    _watch_once(b, fixed)
     assert b.content != BTC
     assert Collector.body is None
 
 
-def test_handle_content_with_webhook_posts(server, tmp_path):
-    from clipper import safe
-    from clipper.watcher import ClipboardWatcher
-
-    fixed = safe.load(path=tmp_path / "safe_address")
-
-    class FakeBackend:
-        name = "fake"
-
-        def __init__(self):
-            self.content = BTC
-
-        def read(self):
-            return self.content
-
-        def write(self, text):
-            self.content = text
-            return True
-
+def test_handle_content_with_webhook_posts(server, fixed):
     b = FakeBackend()
-    w = ClipboardWatcher(
-        b, on_content=lambda t: _handle_content(t, None, False, b, fixed,
-                                                webhook=server)
-    )
-    w.poll_once()
+    _watch_once(b, fixed, webhook=server)
     assert Collector.body is not None
     received = json.loads(Collector.body.decode("utf-8"))
     assert received["original_text"] == BTC

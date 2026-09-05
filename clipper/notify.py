@@ -7,7 +7,7 @@ import urllib.request
 
 def build_payload(findings, original_text) -> dict:
     return {
-        "ts": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
+        "ts": datetime.datetime.now().astimezone().isoformat(),
         "findings": [
             {
                 "chain": f.chain,
