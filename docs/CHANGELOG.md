@@ -35,3 +35,4 @@
 **流程补强(2026-09-05)**:引入 obra/superpowers 的 requesting-code-review / receiving-code-review skill,merge 前新增审核阶段(reviewer 子代理只看 diff 与需求;Critical 立即修 / Important merge 前修 / Minor 记 Issue),写入 AGENTS.md 与 WORKFLOW Step 5。
 - v0.2 剩余:#3 webhook 告警、#4 Windows/macOS 端到端
 - **#3 ✅(2026-09-05,PR #9 → 230178d)**:`clipper watch --webhook URL` 检出地址时 POST JSON({ts, findings[], original_text}),urllib 标准库零依赖,3s 超时、任何失败仅 stderr 警告且不影响替换写回(有专门测试钉住);不传参零网络请求。首次完整走通"审核阶段":reviewer 子代理 2 Important(失败路径无测试)修复 + 3 Minor 采纳(ts 带时区/失败信息不泄漏 URL token/README 数据暴露警告),复核 APPROVE 后 merge;剩余 Minor 记 Issue #10。65 用例全绿
+- **#13 ✅(2026-09-05,PR #14 → 021e26b)**:统一 uv 工具链——uv.lock 入库,CI 改 setup-uv + `uv run pytest`,pre-push 钩子优先 uv(回退 .venv),文档命令统一 `uv sync`/`uv run`;冗余 dev extra 已删(reviewer Minor 采纳),钩子打磨记 Issue #15。65 用例全绿,CI 9s。另:#12 收口 .gitignore(.local/ 本机设备信息不入库),you-win(Windows 测试机)SSH 免密打通,Issue #4 范围收窄为 Windows(macOS 延后)
