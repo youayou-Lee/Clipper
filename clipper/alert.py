@@ -1,11 +1,25 @@
 """User-facing alerts: console line only (no desktop popups)."""
 
 import datetime
+import sys
 
 from .detect import UNCHECKED, VERIFIED
 
 
+def safe_console():
+    """GBK 等窄码页控制台遇 ⚠ 或剪贴板里的任意字符会抛 UnicodeEncodeError
+    (Windows 真机实测),把错误策略降级为 replace:输出不中断,个别符号显示为 ?。
+    幂等,在 CLI 入口调用以覆盖所有输出路径。"""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(errors="replace")
+            except Exception:
+                pass
+
+
 def alert(findings) -> None:
+    safe_console()
     ts = datetime.datetime.now().strftime("%H:%M:%S")
     print(f"\n⚠  [{ts}] 剪贴板中发现 {len(findings)} 个加密货币地址:", flush=True)
     for f in findings:

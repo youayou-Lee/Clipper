@@ -5,7 +5,7 @@ import json
 import sys
 
 from . import __version__
-from .alert import alert
+from .alert import alert, safe_console
 from .detect import filter_alertable, match_exact, scan_text
 from .history import recent, record
 from .watcher import ClipboardWatcher
@@ -71,6 +71,7 @@ def _handle_content(text, db_path, skip_unchecked, backend=None, safe_address=No
 
 
 def main(argv=None):
+    safe_console()  # 必须先于任何输出:粘贴/--json 会回显剪贴板里的任意字符
     parser = argparse.ArgumentParser(
         prog="clipper",
         description="剪贴板守护:检测比特币/以太坊地址(校验和验证),粘贴前告警。",
