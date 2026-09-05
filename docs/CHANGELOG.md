@@ -40,3 +40,5 @@
 - **#10 ✅(2026-09-06,PR #19)**:webhook payload ts 带时区偏移+微秒精度;test_webhook 去重(Fail 服务/FakeBackend 抽 fixture)
 - **#15 ✅(2026-09-06,PR #21)**:pre-push 钩子打磨——`uv run --locked` 快速失败;区分"测试红"与"uv/环境失败"两种拒绝语义(以 pytest 输出特征判定);.venv 回退注释明确仅 POSIX(Windows 走 uv);三种路径本地实测
 - **#19 ✅(2026-09-06,PR #22)**:e2e 脚本移除死代码 parser.error(required 互斥组已兜底);_ps() 缺失时友好报错而非裸 TypeError(+2 单测,总 75)
+- **#27 ✅(2026-09-06,PR #28)**:README 重写——定位改为"复现 Clipper 木马核心机制并开源供分析+制定应对策略",含免责声明、复现范围表、5 条示例应对策略、威胁研究一节(#23);reviewer 提醒补回 webhook 隐私警告
+- **研究体系建立(2026-09-06)**:父 Issue #23 + 三个子 Issue(#24 分发/#25 免杀/#26 加载运行),防御视角红线,产物收 docs/research/
