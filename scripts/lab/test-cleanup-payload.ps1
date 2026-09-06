@@ -45,13 +45,14 @@ Assert "-Kill 后载荷清零" ((Get-PayloadCount) -eq 0)
 Assert "-Kill 输出已终止" ($out -match '已终止')
 
 # 用例 2:误杀防护——普通 pythonw(无 clipper 特征)不被杀
-$ordinary = Start-Process -FilePath (Join-Path $Repo '.venv\Scripts\pythonw.exe') -ArgumentList '-c','import time; time.sleep(120)' -PassThru
+Set-Content -Path (Join-Path $Repo 'scripts\lab\ordinary_sleep.py') -Value 'import time; time.sleep(120)'
+Start-UserProcess 'Ordinary' (Join-Path $Repo '.venv\Scripts\pythonw.exe') (Join-Path $Repo 'scripts\lab\ordinary_sleep.py')
 Start-Sleep 1
 & $cleanup -Kill 2>&1 | Out-Null
 Start-Sleep 1
-$stillAlive = Get-Process -Id $ordinary.Id -ErrorAction SilentlyContinue
-Assert "普通 pythonw 进程不被误杀" ($null -ne $stillAlive)
-if ($stillAlive) { Stop-Process -Id $ordinary.Id -Force -ErrorAction SilentlyContinue }
+$ordinary = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'ordinary_sleep' }
+Assert "普通 pythonw 进程不被误杀" ($null -ne $ordinary)
+if ($ordinary) { $ordinary | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue } }
 
 # 用例 3:自匹配防护——命令行含载荷特征的 cmd 不被杀,脚本自身正常完成
 $decoy = Start-Process cmd -ArgumentList '/k','echo -m clipper watch' -PassThru -WindowStyle Hidden
@@ -67,7 +68,7 @@ $fakeLnk = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Startup
 $ws = New-Object -ComObject WScript.Shell
 $ws.CreateShortcut($fakeLnk).TargetPath = 'C:\Windows\System32\notepad.exe'
 $ws.CreateShortcut($fakeLnk).Save()
-& cmd.exe /c "schtasks /Create /TN ClipperLab /TR 'cmd /c exit' /SC ONCE /ST 23:59 /F"
+& cmd.exe /c "schtasks /Create /TN ClipperLab /TR notepad.exe /SC ONCE /ST 23:59 /F"
 Assert "假持久化产物已布置(前置)" ((Test-Path $fakeLnk) -and ($LASTEXITCODE -eq 0))
 & $cleanup -Kill -Deep 2>&1 | Out-Null
 Assert "--deep 删除 Startup LNK" (-not (Test-Path $fakeLnk))
