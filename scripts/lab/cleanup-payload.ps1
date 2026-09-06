@@ -17,7 +17,7 @@ $MatchCmd  = '-m\s+clipper\s+watch'              # 载荷命令行特征
 $PersistFiles = @(
     (Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Startup\ClipperSvc.lnk')
 )
-$PersistTasks = @('ClipperLab', 'ClipperScan', 'ClipperSet', )
+$PersistTasks = @('ClipperLab', 'ClipperScan', 'ClipperSet')
 # -------------------------------
 
 $found = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
@@ -50,7 +50,7 @@ if ($Deep) {
     } else {
         foreach ($f in $PersistFiles) {
             if (Test-Path $f) {
-                Remove-Item $f -Force
+                Remove-Item $f -Force -ErrorAction Stop
                 Write-Output "[cleanup] 已删除持久化文件: $f"
             } else {
                 Write-Output "[cleanup] 持久化文件不存在: $f"
@@ -59,8 +59,12 @@ if ($Deep) {
         foreach ($t in $PersistTasks) {
             & cmd.exe /c "schtasks /Query /TN $t 2>nul" | Out-Null
             if ($LASTEXITCODE -eq 0) {
-                schtasks /Delete /TN $t /F | Out-Null
-                Write-Output "[cleanup] 已删除计划任务: $t"
+                schtasks /Delete /TN $t /F >$null 2>&1
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Output "[cleanup] 已删除计划任务: $t"
+                } else {
+                    Write-Output "[cleanup] ✗ 删除失败(任务仍在): $t"
+                }
             } else {
                 Write-Output "[cleanup] 计划任务不存在: $t"
             }
