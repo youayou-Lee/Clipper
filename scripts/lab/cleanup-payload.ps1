@@ -7,7 +7,8 @@ param(
     [switch]$Kill,
     [switch]$Deep
 )
-$ErrorActionPreference = 'Stop'
+# 原生命令的 stderr 不作为终止错误(schtasks 查询不存在的任务会写 stderr)
+$ErrorActionPreference = 'Continue'
 
 # --- 定位特征(同步维护区) ---
 $MatchName = '^python(w)?\.exe$'                 # 只匹配 python/pythonw,根除查询命令自匹配
@@ -16,7 +17,7 @@ $MatchCmd  = '-m\s+clipper\s+watch'              # 载荷命令行特征
 $PersistFiles = @(
     (Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Startup\ClipperSvc.lnk')
 )
-$PersistTasks = @('ClipperLab', 'ClipperScan', 'ClipperSet')
+$PersistTasks = @('ClipperLab', 'ClipperScan', 'ClipperSet', 'CleanupTest-Payload', 'CleanupTest-Ordinary', 'CleanupTest-Decoy')
 # -------------------------------
 
 $found = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
@@ -56,7 +57,7 @@ if ($Deep) {
             }
         }
         foreach ($t in $PersistTasks) {
-            $task = schtasks /Query /TN $t 2>$null
+            & cmd.exe /c "schtasks /Query /TN $t 2>nul" | Out-Null
             if ($LASTEXITCODE -eq 0) {
                 schtasks /Delete /TN $t /F | Out-Null
                 Write-Output "[cleanup] 已删除计划任务: $t"
