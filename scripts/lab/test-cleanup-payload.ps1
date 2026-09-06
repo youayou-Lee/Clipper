@@ -2,10 +2,11 @@
 # 在目标机(you-win)上实机运行:构造真载荷/误杀对照/持久化产物,断言脚本行为。
 # 用法: powershell -NoProfile -File scripts\lab\test-cleanup-payload.ps1
 # 退出码 0 = 全部通过。测试自清理,不留痕。
-param()
+param(
+    [string]$Repo = "C:\Users\16121\Clipper"   # 实验室默认;其他机器/目录运行时显式传入
+)
 $ErrorActionPreference = 'Stop'
-$repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$cleanup = Join-Path $PSScriptRoot 'cleanup-payload.ps1'
+$cleanup = Join-Path $Repo 'scripts\lab\cleanup-payload.ps1'
 $results = @()
 
 function Assert($name, $cond) {
@@ -20,7 +21,7 @@ function Get-PayloadCount {
 }
 
 # 用例 1:真载荷定位与清理
-Start-Process -FilePath (Join-Path $repo '.venv\Scripts\pythonw.exe') -ArgumentList '-m','clipper','watch' -WorkingDirectory $repo
+Start-Process -FilePath (Join-Path $Repo '.venv\Scripts\pythonw.exe') -ArgumentList '-m','clipper','watch' -WorkingDirectory $Repo
 Start-Sleep 2
 Assert "真载荷已启动(前置)" ((Get-PayloadCount) -ge 1)
 $out = & $cleanup 2>&1 | Out-String
@@ -32,7 +33,7 @@ Assert "-Kill 后载荷清零" ((Get-PayloadCount) -eq 0)
 Assert "-Kill 输出已终止" ($out -match '已终止')
 
 # 用例 2:误杀防护——普通 python(无 clipper)不被杀
-$ordinary = Start-Process -FilePath (Join-Path $repo '.venv\Scripts\python.exe') -ArgumentList '-c','import time; time.sleep(60)' -PassThru
+$ordinary = Start-Process -FilePath (Join-Path $Repo '.venv\Scripts\python.exe') -ArgumentList '-c','import time; time.sleep(60)' -PassThru
 Start-Sleep 1
 & $cleanup -Kill 2>&1 | Out-Null
 Start-Sleep 1
