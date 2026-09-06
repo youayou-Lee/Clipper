@@ -69,3 +69,4 @@
 - **#38 P1 准备 ✅(2026-09-06)**:Sysmon64 装入 you-win(自定义最小配置,服务 RUNNING);演练载体制作完毕(伪装 LNK→本仓库 clipper watch + zip 归档,存 you-win 本地 lab/ 不入库);**实验室再抓一真 bug 并修复(PR #44)**——GBK 控制台下告警/粘贴回显任意字符崩溃,复现测试先红后绿,审核两轮(防护提升至 CLI 入口 + 无效用例返工)后合并,77 用例全绿;you-win 上 77 passed。待用户提供 QQ SMTP 授权码后发仿真邮件进 P1 正式投放
 - **#38 P1 ✅(2026-09-06)**:投放演练全链路打通——QQ 邮箱(仅本人收信)→ 下载 zip → LNK → 载荷运行 → 剪贴板劫持生效(用户实测粘贴出保头尾等长变体);Sysmon EventID 1 抓到载荷进程链(检测点成立的直接证据);无检测对照组成立(Defender 关闭全程无拦截);载荷进程已清理
 - **#38 P3 ✅ + #47 ✅(2026-09-06,PR #48)**:lab-findings.md 检测验证报告——进程链检测点成立(Sysmon 全链捕获)、**隐蔽形态≠检测盲区**(#47 核心假设实证)、剪贴板轮询为开源工具栈盲区(Sysmon 零事件)、ScriptBlock 未启用即盲区;第二轮开 Defender 重测/P2 二维码/收尾清理待续
+- **#50 ✅(2026-09-06,PR #51)**:scripts/lab/cleanup-payload.ps1(双条件定位:进程名白名单+命令行,根除自匹配陷阱;dry-run 默认/-Kill/-Kill -Deep)+ test-cleanup-payload.ps1(4 组实机测试)。** laboratories 重大发现**:you-win 实际检测者是火绒(Defender 服务停≠无防护)——Sysmon FileDelete 实拍 HipsDaemon 隔离了测试脚本,但未拦载荷落地/隐蔽运行;检测矩阵已修正,lab-findings.md 同步;#50 测试套件因火绒拦截待用户加白后实测
