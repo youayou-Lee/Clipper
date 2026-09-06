@@ -33,7 +33,7 @@ Assert "-Kill 后载荷清零" ((Get-PayloadCount) -eq 0)
 Assert "-Kill 输出已终止" ($out -match '已终止')
 
 # 用例 2:误杀防护——普通 python(无 clipper)不被杀
-$ordinary = Start-Process -FilePath (Join-Path $Repo '.venv\Scripts\python.exe') -ArgumentList '-c','import time; time.sleep(60)' -PassThru
+$ordinary = Start-Process -FilePath (Join-Path $Repo '.venv\Scripts\pythonw.exe') -ArgumentList '-c','import time; time.sleep(60)' -PassThru
 Start-Sleep 1
 & $cleanup -Kill 2>&1 | Out-Null
 Start-Sleep 1
@@ -59,7 +59,8 @@ schtasks /Create /TN ClipperLab /TR 'cmd /c exit' /SC ONCE /ST 23:59 /F | Out-Nu
 Assert "假持久化产物已布置(前置)" ((Test-Path $fakeLnk) -and ((schtasks /Query /TN ClipperLab 2>&1) -match 'ClipperLab'))
 & $cleanup -Kill -Deep 2>&1 | Out-Null
 Assert "--deep 删除 Startup LNK" (-not (Test-Path $fakeLnk))
-Assert "--deep 删除计划任务" (-not ((schtasks /Query /TN ClipperLab 2>&1) -match 'ClipperLab'))
+schtasks /Query /TN ClipperLab >$null 2>&1
+Assert "--deep 删除计划任务" ($LASTEXITCODE -ne 0)
 
 # 汇总
 $failed = @($results | Where-Object { -not $_.ok })
