@@ -70,3 +70,4 @@
 - **#38 P1 ✅(2026-09-06)**:投放演练全链路打通——QQ 邮箱(仅本人收信)→ 下载 zip → LNK → 载荷运行 → 剪贴板劫持生效(用户实测粘贴出保头尾等长变体);Sysmon EventID 1 抓到载荷进程链(检测点成立的直接证据);无检测对照组成立(Defender 关闭全程无拦截);载荷进程已清理
 - **#38 P3 ✅ + #47 ✅(2026-09-06,PR #48)**:lab-findings.md 检测验证报告——进程链检测点成立(Sysmon 全链捕获)、**隐蔽形态≠检测盲区**(#47 核心假设实证)、剪贴板轮询为开源工具栈盲区(Sysmon 零事件)、ScriptBlock 未启用即盲区;第二轮开 Defender 重测/P2 二维码/收尾清理待续
 - **#50 ✅(2026-09-06,PR #51)**:scripts/lab/cleanup-payload.ps1(双条件定位:进程名白名单+命令行,根除自匹配陷阱;dry-run 默认/-Kill/-Kill -Deep)+ test-cleanup-payload.ps1(4 组实机测试)。** laboratories 重大发现**:you-win 实际检测者是火绒(Defender 服务停≠无防护)——Sysmon FileDelete 实拍 HipsDaemon 隔离了测试脚本,但未拦载荷落地/隐蔽运行;检测矩阵已修正,lab-findings.md 同步;#50 测试套件因火绒拦截待用户加白后实测
+- **#50 ✅(2026-09-06,PR #51+#53 → b3f6875)**:实验室载荷清理脚本 cleanup-payload.ps1(双条件定位/dry-run 默认/-Kill/-Kill -Deep 环境恢复)+ 同步测试套件(4 组 10 项,you-win 实测全过,含 ≥2 实例定位清零)。事故与教训:提交误落 main 被分支保护拦下,分支错乱导致 PR #51 squash 只带走中间态——最终版从 reflog 抢救(PR #53);本地 main 落后引发连环"文件消失"误判。火绒发现已并入 #38
