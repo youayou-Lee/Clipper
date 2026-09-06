@@ -1,4 +1,4 @@
-# cleanup-payload.ps1 的配套测试(Issue #50 同步测试载体)。
+﻿# cleanup-payload.ps1 的配套测试(Issue #50 同步测试载体)。
 # 在目标机(you-win)上实机运行:构造真载荷/误杀对照/持久化产物,断言脚本行为。
 # 用法: powershell -NoProfile -File scripts\lab\test-cleanup-payload.ps1
 # 退出码 0 = 全部通过。测试自清理,不留痕。

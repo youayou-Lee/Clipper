@@ -1,4 +1,4 @@
-# 实验室载荷清理脚本(Issue #50)。
+﻿# 实验室载荷清理脚本(Issue #50)。
 # 只识别并清理本仓库自己的 clipper 载荷(python/pythonw + '-m clipper watch')。
 # 默认 dry-run 仅列出;-Kill 执行进程清理;-Deep 额外清理持久化产物(需与 -Kill 同用)。
 # 定位特征与载荷形态同步维护:载荷新增隐蔽/持久化形态时,必须同 PR 更新 $MatchName/
