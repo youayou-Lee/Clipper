@@ -33,6 +33,7 @@ function Get-PayloadCount {
     } | Measure-Object).Count
 }
 
+try {
 # 用例 1:真载荷定位与清理
 Start-UserProcess 'Payload' (Join-Path $Repo '.venv\Scripts\pythonw.exe') '-m clipper watch'
 Assert "真载荷已启动(前置)" ((Get-PayloadCount) -ge 1)
@@ -75,13 +76,15 @@ Assert "--deep 删除 Startup LNK" (-not (Test-Path $fakeLnk))
 & cmd.exe /c "schtasks /Query /TN ClipperLab 2>nul" | Out-Null
 Assert "--deep 删除计划任务" ($LASTEXITCODE -ne 0)
 
-# 收尾:清理本测试创建的计划任务
+} finally {
+# 清理必须在任何退出路径上执行(否则泄漏 CleanupTest- 载荷任务)
 foreach ($tn in $spawnTasks) {
     & cmd.exe /c "schtasks /Delete /TN $tn /F 2>nul" | Out-Null
+}
+Remove-Item (Join-Path $Repo 'scripts\lab\ordinary_sleep.py') -Force -ErrorAction SilentlyContinue
 }
 
 $failed = @($results | Where-Object { -not $_.ok })
 Write-Output ("---- {0}/{1} 通过 ----" -f ($results.Count - $failed.Count), $results.Count)
-Remove-Item (Join-Path $Repo 'scripts\lab\ordinary_sleep.py') -Force -ErrorAction SilentlyContinue
 if ($failed.Count -gt 0) { exit 1 }
 exit 0
