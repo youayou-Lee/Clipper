@@ -82,5 +82,6 @@ foreach ($tn in $spawnTasks) {
 
 $failed = @($results | Where-Object { -not $_.ok })
 Write-Output ("---- {0}/{1} 通过 ----" -f ($results.Count - $failed.Count), $results.Count)
+Remove-Item (Join-Path $Repo 'scripts\lab\ordinary_sleep.py') -Force -ErrorAction SilentlyContinue
 if ($failed.Count -gt 0) { exit 1 }
 exit 0

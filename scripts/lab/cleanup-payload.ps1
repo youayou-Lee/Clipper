@@ -17,7 +17,7 @@ $MatchCmd  = '-m\s+clipper\s+watch'              # 载荷命令行特征
 $PersistFiles = @(
     (Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Startup\ClipperSvc.lnk')
 )
-$PersistTasks = @('ClipperLab', 'ClipperScan', 'ClipperSet', 'CleanupTest-Payload', 'CleanupTest-Ordinary', 'CleanupTest-Decoy')
+$PersistTasks = @('ClipperLab', 'ClipperScan', 'ClipperSet', )
 # -------------------------------
 
 $found = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
