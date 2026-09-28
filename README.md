@@ -1,4 +1,7 @@
-# Clipper — 复现 Clipper 木马,研究应对
+# TrapLab — 安全案例实验室
+
+> 案例一:复现 Clipper 木马(剪贴板劫持)并研究应对,以下原文;
+> 案例二:Web3 授权钓鱼(Approve/Permit)本地复现,见 `scripts/phishing_demo.html`、`docs/phishing-runbook.md`。
 
 本项目复现 **Clipper 木马**(剪贴板劫持木马)的核心机制并开源,供公众分析其原理,
 在此基础上制定与验证应对策略;仓库同时给出**示例应对策略**的实际实现。
@@ -6,7 +9,7 @@
 > **免责声明**:本项目仅用于防御研究、安全教育与意识提升。
 > 仓库中的"替换写回"等机制默认工作在**本机、防护者视角**(替换目标是本机固化的安全地址,
 > 历史记录保留原始地址供核对)。**一切动手实践仅限本机与自有局域网内的自有测试机**
-> (攻击链演练实验室,见 [Issue #38](https://github.com/youayou-Lee/Clipper/issues/38)),
+> (攻击链演练实验室,见 [Issue #38](https://github.com/youayou-Lee/TrapLab/issues/38)),
 > 严禁指向任何第三方设备或真实用户,那正是本项目要对抗的行为。
 
 ## Clipper 木马是什么
@@ -52,7 +55,7 @@ uv run python scripts/demo.py            # 8 场景端到端演示
 ## 威胁研究
 
 方法论:**先以攻击者视角构建完整攻击链,再切防守者视角做检测点映射与对抗方案**。
-跟踪:[Issue #23](https://github.com/youayou-Lee/Clipper/issues/23)。产物:
+跟踪:[Issue #23](https://github.com/youayou-Lee/TrapLab/issues/23)。产物:
 
 - [`docs/research/attack-chain.md`](docs/research/attack-chain.md) — 攻击链全景(分发/免杀/加载/持久化/劫持/变现,全部厂商报告溯源)
 - [`docs/research/defense-mapping.md`](docs/research/defense-mapping.md) — 逐环节检测点映射、对策分级与攻防不对称分析

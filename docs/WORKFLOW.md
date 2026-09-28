@@ -15,7 +15,7 @@
 **看进度**:
 
 ```bash
-gh api repos/youayou-Lee/Clipper/milestones --jq '.[] | "\(.title): \(.open_issues) open / \(.closed_issues) closed, due \(.due_on)"'
+gh api repos/youayou-Lee/TrapLab/milestones --jq '.[] | "\(.title): \(.open_issues) open / \(.closed_issues) closed, due \(.due_on)"'
 gh issue list --milestone "v0.2" --state all
 ```
 
