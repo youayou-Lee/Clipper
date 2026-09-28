@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__PROJECT__ · __SYMBOL__ 空投领取</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"PingFang SC","Segoe UI",sans-serif; background:#f7f8fa; color:#0f1728; }
+  a { color:#2563eb; text-decoration:none; }
+  nav { display:flex; align-items:center; gap:32px; padding:0 40px; height:64px; background:#fff; border-bottom:1px solid #e7eaf0; }
+  .logo { display:flex; align-items:center; gap:10px; font-weight:700; font-size:17px; }
+  .logo i { width:30px; height:30px; border-radius:50%; display:inline-block;
+            background:conic-gradient(#2563eb,#7c3aed,#2563eb); }
+  nav .links { display:flex; gap:24px; font-size:14px; color:#5b6472; }
+  nav .links a { color:#5b6472; }
+  .wallet-btn { margin-left:auto; background:#2563eb; border:0; color:#fff; padding:10px 20px; border-radius:10px; cursor:pointer; font-size:14px; font-weight:600; }
+  .wallet-btn.connected { background:#eef4ff; color:#2563eb; }
+  header { text-align:center; padding:64px 20px 8px; }
+  .pill { display:inline-block; background:#eef4ff; color:#2563eb; font-size:13px; font-weight:600; padding:6px 14px; border-radius:99px; margin-bottom:18px;}
+  header h1 { font-size:40px; font-weight:800; letter-spacing:-.5px; }
+  header p { margin-top:12px; color:#5b6472; font-size:16px; }
+  .stats { display:flex; gap:44px; justify-content:center; margin:34px 0 8px; }
+  .stats div b { display:block; font-size:22px; }
+  .stats div span { color:#8a93a3; font-size:13px; }
+  main { max-width:440px; margin:30px auto 90px; padding:0 16px; }
+  .card { background:#fff; border:1px solid #e7eaf0; border-radius:18px; padding:26px; box-shadow:0 12px 40px rgba(15,23,40,.06);}
+  .row { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .row .lab { color:#8a93a3; font-size:13px;}
+  .row .val { font-weight:700; font-size:15px;}
+  .amount { text-align:center; padding:14px 0 4px;}
+  .amount .num { font-size:38px; font-weight:800; }
+  .amount .num span { font-size:20px; color:#5b6472; font-weight:600; }
+  .amount .sub { color:#8a93a3; font-size:13px; margin-top:4px;}
+  .divider { height:1px; background:#eef0f4; margin:18px 0;}
+  .cta { width:100%; padding:15px; font-size:16px; font-weight:700; border:0; border-radius:12px; cursor:pointer; color:#fff; background:#2563eb; }
+  .cta:hover { background:#1d53c4; }
+  .cta.ghost { background:#f1f4f9; color:#24314a; margin-top:10px; font-weight:600; }
+  .msg { margin-top:14px; font-size:13.5px; color:#0f9d58; text-align:center; min-height:20px; line-height:1.55;}
+  footer { text-align:center; color:#9aa3b2; font-size:12.5px; padding:26px; border-top:1px solid #e7eaf0;}
+  footer a { color:#9aa3b2; margin:0 8px;}
+</style>
+</head>
+<body>
+<nav>
+  <span class="logo"><i></i>__PROJECT__</span>
+  <div class="links"><a href="#">治理</a><a href="#">文档</a><a href="#">数据看板</a><a href="#">安全</a></div>
+  <button class="wallet-btn" id="walletBtn">连接钱包</button>
+</nav>
+
+<header>
+  <div class="pill">第 3 期 · 已开放领取</div>
+  <h1>__SYMBOL__ 空投领取</h1>
+  <p>__TAGLINE__</p>
+  <div class="stats">
+    <div><b>__AMOUNT__</b><span>您可领取(__SYMBOL__)</span></div>
+    <div><b>4,821,377</b><span>总发放量</span></div>
+    <div><b>92,418</b><span>合格地址</span></div>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="row"><span class="lab">领取地址</span><span class="val" id="addrView">未连接</span></div>
+    <div class="row"><span class="lab">领取截止</span><span class="val">47 天后</span></div>
+    <div class="amount">
+      <div class="num">__AMOUNT__ <span>__SYMBOL__</span></div>
+      <div class="sub">≈ 按上线价格预估,以 TGE 实际兑换为准</div>
+    </div>
+    <div class="divider"></div>
+    <button class="cta" id="claimBtn">Claim 立即领取</button>
+    <button class="cta ghost" id="gaslessBtn">__GASLESS__</button>
+    <div class="msg" id="msg"></div>
+  </div>
+</main>
+
+<footer>
+  <a href="#">条款</a><a href="#">隐私</a><a href="#">Github</a><a href="#">Discord</a>
+  <br>© 2026 __PROJECT__ 基金会 · 本页面由 __PROJECT__ 官方运营
+</footer>
+<script src="/app.js"></script>
+</body>
+</html>

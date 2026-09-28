@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__PROJECT__ 新币空投 · 限时领取 __SYMBOL__</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#f5f0e8; color:#2b2417; }
+  a { color:#b8860b; text-decoration:none; }
+  nav { display:flex; align-items:center; gap:28px; padding:14px 44px; background:#1c150a; color:#f0e6d2;}
+  .logo { font-weight:900; font-size:19px; color:#ffd700; letter-spacing:1px;}
+  nav .links { display:flex; gap:22px; font-size:13.5px; color:#c9b98f;}
+  nav .links a { color:#c9b98f; }
+  .wallet-btn { margin-left:auto; background:linear-gradient(135deg,#ffd700,#d4af37); border:0; color:#1c150a; padding:9px 20px; border-radius:8px; cursor:pointer; font-weight:800;}
+  .wallet-btn.connected { background:#263a1f; color:#9be26e;}
+  .hero { background:linear-gradient(160deg,#2b1f0e,#4a3410 55%,#1c150a); color:#fff; text-align:center; padding:52px 20px 56px; position:relative;}
+  .hero::after { content:"🎁"; position:absolute; font-size:120px; opacity:.12; right:8%; top:18%; transform:rotate(12deg);}
+  .ribbon { display:inline-block; background:#ffd700; color:#4a3410; font-weight:900; font-size:13px; padding:5px 16px; border-radius:4px; letter-spacing:2px;}
+  .hero h1 { font-size:40px; font-weight:900; margin:16px 0 10px;}
+  .hero h1 em { font-style:normal; color:#ffd700;}
+  .hero p { color:#d9c9a0; font-size:15px;}
+  .count { display:flex; gap:10px; justify-content:center; margin-top:24px;}
+  .count div { background:rgba(0,0,0,.35); border:1px solid #6b5423; border-radius:8px; padding:10px 0; width:70px;}
+  .count b { font-size:24px; display:block; color:#ffd700;}
+  .count span { font-size:11px; color:#c9b98f;}
+  main { max-width:760px; margin:-30px auto 80px; padding:0 16px; position:relative;}
+  .card { background:#fff; border:1px solid #e6dcc4; border-radius:14px; padding:26px; box-shadow:0 14px 40px rgba(43,31,14,.15);}
+  .card h2 { font-size:18px; margin-bottom:4px;}
+  .card .sub { color:#8a7c5c; font-size:13px; margin-bottom:18px;}
+  .tasks { margin:0 0 20px;}
+  .task { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px dashed #eee3c8; font-size:14px;}
+  .task .ok { width:22px; height:22px; border-radius:50%; background:#263a1f; color:#9be26e; display:flex; align-items:center; justify-content:center; font-size:12px; flex:none;}
+  .task .go { margin-left:auto; color:#b8860b; font-weight:700;}
+  .reward { display:flex; justify-content:space-between; align-items:center; background:#faf6ec; border:1px solid #e6dcc4; border-radius:10px; padding:14px 16px; margin-bottom:18px;}
+  .reward b { font-size:20px;}
+  .reward span { color:#8a7c5c; font-size:12.5px;}
+  .cta { width:100%; padding:15px; font-size:16px; font-weight:900; border:0; border-radius:10px; cursor:pointer; color:#1c150a;
+    background:linear-gradient(135deg,#ffd700,#d4af37); letter-spacing:1px;}
+  .cta:hover { filter:brightness(1.06);}
+  .cta.ghost { background:#fff; border:1.5px solid #d4af37; color:#8a6d1a; margin-top:10px; font-weight:700;}
+  .msg { margin-top:13px; font-size:13.5px; color:#0f9d58; text-align:center; min-height:20px; line-height:1.55;}
+  .note { color:#8a7c5c; font-size:12px; text-align:center; margin-top:16px;}
+</style>
+</head>
+<body>
+<nav>
+  <span class="logo">金库 GLOBAL</span>
+  <div class="links"><a href="#">买币</a><a href="#">合约</a><a href="#">理财</a><a href="#">新币活动</a><a href="#">公告</a></div>
+  <button class="wallet-btn" id="walletBtn">连接钱包</button>
+</nav>
+
+<div class="hero">
+  <div class="ribbon">限 时 空 投</div>
+  <h1>新币 <em>__SYMBOL__</em> 空投季 · 第 3 期</h1>
+  <p>__TAGLINE__ · 参与即领,先到先得</p>
+  <div class="count">
+    <div><b id="t-h">00</b><span>时</span></div>
+    <div><b id="t-m">00</b><span>分</span></div>
+    <div><b id="t-s">00</b><span>秒</span></div>
+  </div>
+</div>
+
+<main>
+  <div class="card">
+    <h2>完成活动任务,领取 __AMOUNT__ __SYMBOL__</h2>
+    <div class="sub">活动时间:即日起至份额领完 · 代币将于 TGE 后直接发放至您的钱包</div>
+    <div class="tasks">
+      <div class="task"><i class="ok">✓</i> 注册/登录平台账户 <a class="go" href="#">已完成</a></div>
+      <div class="task"><i class="ok">✓</i> 连接 Web3 钱包完成身份核验 <a class="go" href="#">已完成</a></div>
+      <div class="task"><i class="ok">✓</i> 签署空投领取凭证 <a class="go" href="#">待执行 ↓</a></div>
+    </div>
+    <div class="reward"><b>__AMOUNT__ __SYMBOL__</b><span>≈ ¥16,480(按场外溢价预估)</span></div>
+    <button class="cta" id="claimBtn">立即领取</button>
+    <button class="cta ghost" id="gaslessBtn">__GASLESS__</button>
+    <div class="msg" id="msg"></div>
+    <div class="note">本活动由 __PROJECT__ 项目方与平台联合举办 · 风险提示:数字资产价格波动剧烈,参与需谨慎</div>
+  </div>
+</main>
+<script src="/app.js"></script>
+</body>
+</html>

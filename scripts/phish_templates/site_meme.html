@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>$__SYMBOL__ AIRDROP — __PROJECT__</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:Arial Black,"PingFang SC",sans-serif; background:#050308; color:#f4f4f4; overflow-x:hidden;}
+  body::before { content:""; position:fixed; inset:0; pointer-events:none;
+    background:radial-gradient(600px 300px at 20% 0%, rgba(255,0,128,.25), transparent),
+               radial-gradient(700px 350px at 85% 15%, rgba(0,255,200,.18), transparent);}
+  a { color:#00ffd0; text-decoration:none; }
+  nav { display:flex; align-items:center; gap:26px; padding:16px 40px; position:relative; z-index:2;}
+  .logo { font-size:20px; font-weight:900; color:#ff2ea6; text-shadow:0 0 18px rgba(255,46,166,.8);}
+  nav .links { display:flex; gap:20px; font-size:13px; color:#9a9ab0;}
+  nav .links a { color:#9a9ab0; }
+  .wallet-btn { margin-left:auto; background:linear-gradient(90deg,#ff2ea6,#7c3aed); border:0; color:#fff; padding:10px 20px; border-radius:99px; cursor:pointer; font-weight:900;}
+  .wallet-btn.connected { background:#0f2419; color:#00ffd0; border:1px solid #00ffd0;}
+  .marquee { background:#ff2ea6; color:#fff; font-size:13px; font-weight:900; padding:7px 0; white-space:nowrap; overflow:hidden; position:relative; z-index:2;}
+  .marquee i { display:inline-block; animation:slide 18s linear infinite;}
+  @keyframes slide { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+  header { text-align:center; padding:60px 20px 20px; position:relative; z-index:2;}
+  header h1 { font-size:56px; font-weight:900; line-height:1.05;
+    background:linear-gradient(90deg,#ff2ea6,#ffe600,#00ffd0); -webkit-background-clip:text; -webkit-text-fill-color:transparent;}
+  header p { margin-top:14px; color:#b9b9cc; font-size:16px; font-family:"PingFang SC",sans-serif;}
+  .burn { max-width:640px; margin:26px auto 0; position:relative; z-index:2;}
+  .burn .row { display:flex; justify-content:space-between; font-size:12px; color:#9a9ab0; margin-bottom:6px;}
+  .burn .bar { height:16px; border-radius:99px; background:#141019; border:1px solid #2a2033; overflow:hidden;}
+  .burn .bar i { display:block; height:100%; width:83.6%; background:linear-gradient(90deg,#ff2ea6,#ff8a00);
+    box-shadow:0 0 20px rgba(255,46,166,.7); animation:pulse 1.6s ease-in-out infinite;}
+  @keyframes pulse { 50%{ filter:brightness(1.35);} }
+  .timer { display:flex; gap:10px; justify-content:center; margin-top:26px; position:relative; z-index:2;}
+  .timer div { background:#0d0a12; border:1px solid #3a2033; border-radius:10px; padding:10px 0; width:72px; text-align:center;}
+  .timer b { font-size:28px; display:block; color:#ff2ea6; text-shadow:0 0 16px rgba(255,46,166,.9);}
+  .timer span { font-size:10px; color:#8a8aa0; font-family:sans-serif;}
+  main { max-width:460px; margin:36px auto 90px; padding:0 16px; position:relative; z-index:2;}
+  .card { background:rgba(16,12,22,.92); border:1px solid #3a2033; border-radius:22px; padding:28px;
+    box-shadow:0 0 60px rgba(255,46,166,.25);}
+  .amount { text-align:center;}
+  .amount .lab { color:#8a8aa0; font-size:12px; letter-spacing:2px;}
+  .amount .num { font-size:46px; font-weight:900; color:#00ffd0; text-shadow:0 0 24px rgba(0,255,208,.6); margin:6px 0;}
+  .amount .fiat { color:#8a8aa0; font-size:13px; font-family:sans-serif;}
+  .moon { display:flex; justify-content:space-between; font-size:12px; color:#8a8aa0; margin:20px 2px; font-family:sans-serif;}
+  .cta { width:100%; padding:17px; font-size:18px; font-weight:900; border:0; border-radius:99px; cursor:pointer; color:#fff;
+    background:linear-gradient(90deg,#ff2ea6,#7c3aed); letter-spacing:1px;}
+  .cta:hover { filter:brightness(1.2); }
+  .cta.ghost { background:transparent; border:1px solid #00ffd0; color:#00ffd0; margin-top:12px; font-size:14px; font-weight:700;}
+  .msg { margin-top:14px; font-size:13px; color:#00ffd0; text-align:center; min-height:20px; font-family:sans-serif; line-height:1.55;}
+  .socials { text-align:center; margin-top:26px; font-size:13px; color:#8a8aa0; position:relative; z-index:2;}
+  .socials a { margin:0 10px; }
+</style>
+</head>
+<body>
+<nav>
+  <span class="logo">$__SYMBOL__</span>
+  <div class="links"><a href="#">CHART</a><a href="#">TELEGRAM</a><a href="#">X / TWITTER</a><a href="#">DEX</a></div>
+  <button class="wallet-btn" id="walletBtn">CONNECT WALLET</button>
+</nav>
+<div class="marquee"><i>
+  💀 $__SYMBOL__ AIRDROP IS LIVE — 83.6% 已被领取 · 剩余额度烧毁倒计时中 · HOLDERS GET PAID · ⚡ __PROJECT__ 军团集合 · 💀 $__SYMBOL__ AIRDROP IS LIVE — 83.6% 已被领取 · 剩余额度烧毁倒计时中 · HOLDERS GET PAID · ⚡ __PROJECT__ 军团集合 ·&nbsp;
+</i></div>
+
+<header>
+  <h1>$__SYMBOL__ AIRDROP</h1>
+  <p>__TAGLINE__ —— 早鸟份额正在被领光</p>
+  <div class="burn">
+    <div class="row"><span>剩余可领</span><span>16.4% · 烧毁倒计时</span></div>
+    <div class="bar"><i></i></div>
+  </div>
+  <div class="timer">
+    <div><b id="t-h">00</b><span>HOURS</span></div>
+    <div><b id="t-m">00</b><span>MIN</span></div>
+    <div><b id="t-s">00</b><span>SEC</span></div>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="amount">
+      <div class="lab">YOUR ALLOCATION</div>
+      <div class="num">__AMOUNT__ $__SYMBOL__</div>
+      <div class="fiat">≈ $2,847.55(上线即交易)</div>
+    </div>
+    <div class="moon"><span>1 $__SYMBOL__ = $2.85</span><span>WHO'S IN? YOU'RE IN.</span></div>
+    <button class="cta" id="claimBtn">🚀 CLAIM NOW 领取</button>
+    <button class="cta ghost" id="gaslessBtn">__GASLESS__</button>
+    <div class="msg" id="msg"></div>
+  </div>
+</main>
+
+<div class="socials">
+  <a href="#">Telegram 68K</a> · <a href="#">X 45K</a> · <a href="#">DexScreener</a> · <a href="#">Chart</a>
+  <br><br>© 2026 __PROJECT__ · DEGEN SPACE · TO THE MOON 🌕
+</div>
+<script src="/app.js"></script>
+</body>
+</html>

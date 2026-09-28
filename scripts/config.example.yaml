@@ -1,0 +1,39 @@
+# TrapLab 钓鱼实验室配置(案例二:Web3 授权钓鱼复现)
+#
+# ⚠ 安全边界:本配置及整套服务仅用于**自有内网实验室**的安全教育与攻防演练,
+#   目标链为本机/自有测试链(Anvil),私钥为公开测试私钥,零真实资产。
+#   严禁将本服务暴露到公网或指向任何真实用户——那正是本案例要演示的犯罪行为。
+#   本文件含私钥,**已加入 .gitignore,绝不入库**。
+
+# 攻击者(收割方)身份:地址与私钥必须成对
+attacker:
+  address: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"   # Anvil 测试账户 #1
+  key: "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
+
+# 目标链
+chain:
+  rpc: "http://127.0.0.1:8546"   # Anvil
+  chain_id: 31337
+  rpc_name: "NovaChain Mainnet"        # MetaMask 里显示的网络名(拟真,可任意)        # MetaMask 里显示的网络名
+
+# 假币(钓鱼站诱导授权的对象)
+token:
+  address: "0x8464135c8F25Da09e49BC8782676a84730C318bC"
+  name: "PhishingToken"          # ⚠ 必须与合约 permit 的 EIP-712 domain.name 一字不差
+  symbol: "AIRDROP"
+
+# 钓鱼页面包装(受害者看到的一切文案)
+site:
+  project: "星穹协议 NovaChain"
+  tagline: "下一代模块化 Layer2,主网空投第 3 期开启"
+  airdrop_amount: "1000"          # 页面展示的"可领取"数量
+  countdown_minutes: 47           # 倒计时(分钟),制造紧迫感
+  deadline: 1893456000            # permit deadline(Unix 秒)
+  gasless_text: "免 Gas 领取(由 NovaChain 赞助商代付)"
+  claim_mode: "unlimited"         # 主按钮的真实授权额度:unlimited=无限 / exact=恰为 airdrop_amount(对比演示用)
+  style: "official"               # 页面皮肤:official=官方领取页 / meme=炒作风 / exchange=交易所活动风
+
+# 服务
+server:
+  bind: "0.0.0.0:8088"            # 监听地址;仅限自有内网实验室
+  admin_key: "traplab"            # /admin 访问口令
