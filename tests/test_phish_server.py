@@ -1,0 +1,159 @@
+"""钓鱼实验室服务(scripts/phish_server.py)的 L1 测试。
+
+覆盖:config fail-closed 校验、事件流→待收割清单、/admin 口令门、
+单坏请求不崩服务。收割的链上行为由 tests/test_drain.py 的 Anvil e2e 覆盖。
+"""
+
+import importlib.util
+import json
+import pathlib
+import urllib.request
+from http.server import ThreadingHTTPServer
+
+import pytest
+import yaml
+
+_ROOT = pathlib.Path(__file__).parent.parent
+_spec = importlib.util.spec_from_file_location(
+    "phish_server", _ROOT / "scripts" / "phish_server.py")
+phish = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(phish)
+
+EXAMPLE = _ROOT / "scripts" / "config.example.yaml"
+KEY = yaml.safe_load(EXAMPLE.read_text())["server"]["admin_key"]
+
+
+@pytest.fixture()
+def server():
+    cfg = phish.load_config(str(EXAMPLE))
+    phish.Handler.cfg = cfg
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), phish.Handler)
+    thread = __import__("threading").Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    try:
+        yield f"http://127.0.0.1:{httpd.server_address[1]}"
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+        thread.join(timeout=5)
+        phish.STORE.events.clear()
+        phish.STORE.items.clear()
+
+
+def _get(url, expect=200):
+    try:
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            return resp.status, resp.read().decode()
+    except urllib.error.HTTPError as exc:
+        return exc.code, exc.read().decode()
+
+
+def _post(url, obj):
+    req = urllib.request.Request(url, data=json.dumps(obj).encode(),
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status, json.loads(resp.read())
+    except urllib.error.HTTPError as exc:
+        return exc.code, json.loads(exc.read())
+
+
+class TestLoadConfig:
+    def test_example_loads(self):
+        cfg = phish.load_config(str(EXAMPLE))
+        assert cfg["server"]["bind"].startswith("0.0.0.0:")
+
+    def test_missing_file_exits(self, tmp_path):
+        with pytest.raises(SystemExit, match="不存在"):
+            phish.load_config(str(tmp_path / "nope.yaml"))
+
+    def test_missing_section_exits(self, tmp_path):
+        p = tmp_path / "c.yaml"
+        p.write_text("attacker:\n  address: '0x1111111111111111111111111111111111111111'\n  key: '0x1'\n")
+        with pytest.raises(SystemExit, match="缺少节"):
+            phish.load_config(str(p))
+
+    def test_missing_key_exits(self, tmp_path):
+        cfg = yaml.safe_load(EXAMPLE.read_text())
+        del cfg["attacker"]["key"]
+        p = tmp_path / "c.yaml"
+        p.write_text(yaml.dump(cfg, allow_unicode=True))
+        with pytest.raises(SystemExit, match="attacker.key"):
+            phish.load_config(str(p))
+
+    def test_bad_address_exits(self, tmp_path):
+        cfg = yaml.safe_load(EXAMPLE.read_text())
+        cfg["attacker"]["address"] = "0x123"
+        p = tmp_path / "c.yaml"
+        p.write_text(yaml.dump(cfg, allow_unicode=True))
+        with pytest.raises(SystemExit, match="不是合法地址"):
+            phish.load_config(str(p))
+
+    def test_bad_claim_mode_exits(self, tmp_path):
+        cfg = yaml.safe_load(EXAMPLE.read_text())
+        cfg["site"]["claim_mode"] = "steal"
+        p = tmp_path / "c.yaml"
+        p.write_text(yaml.dump(cfg, allow_unicode=True))
+        with pytest.raises(SystemExit, match="claim_mode"):
+            phish.load_config(str(p))
+
+
+class TestSitePage:
+    def test_page_has_no_demo_markings(self, server):
+        status, page = _get(server + "/")
+        assert status == 200
+        text = page.lower()
+        for banned in ("演示", "triplab-case", "仅为本地", "仅限本地", "anvil", "test key"):
+            assert banned not in text, f"受害者页面泄漏了演示字样: {banned}"
+
+    def test_page_injects_config(self, server):
+        _, page = _get(server + "/")
+        assert "星穹协议 NovaChain" in page
+        assert "__CONFIG_JSON__" not in page and "__PROJECT__" not in page
+
+
+class TestAdminGate:
+    def test_admin_requires_key(self, server):
+        status, _ = _get(server + "/admin")
+        assert status == 403
+        status, _ = _get(server + "/admin?key=wrong")
+        assert status == 403
+
+    def test_admin_with_key(self, server):
+        status, page = _get(server + f"/admin?key={KEY}")
+        assert status == 200 and "收割台" in page
+
+    def test_state_api_requires_key(self, server):
+        status, _ = _get(server + "/admin/api/state")
+        assert status == 403
+
+
+class TestEventFlow:
+    def test_connect_event_appears(self, server):
+        status, body = _post(server + "/api/event", {"type": "connect", "address": "0xabc"})
+        assert status == 200
+        state = json.loads(_get(server + f"/admin/api/state?key={KEY}")[1])
+        assert any("0xabc" in e["text"] for e in state["events"])
+
+    def test_unknown_event_rejected(self, server):
+        status, _ = _post(server + "/api/event", {"type": "hack"})
+        assert status == 400
+
+    def test_permit_event_creates_pending_item(self, server):
+        sig = "0x" + "11" * 32 + "22" * 32 + "1b"
+        status, body = _post(server + "/api/event", {
+            "type": "permit", "owner": "0x" + "ab" * 20, "sig": sig,
+            "value": hex(10**21), "deadline": "1893456000", "nonce": "0"})
+        assert status == 200
+        state = json.loads(_get(server + f"/admin/api/state?key={KEY}")[1])
+        item = next(i for i in state["items"] if i["id"] == body["itemId"])
+        assert item["status"] == "pending" and item["type"] == "permit"
+
+    def test_bad_request_does_not_kill_server(self, server):
+        req = urllib.request.Request(server + "/api/event", data=b"not json",
+                                     headers={"Content-Type": "application/json"})
+        with pytest.raises(urllib.error.HTTPError):
+            urllib.request.urlopen(req, timeout=10)
+        # 服务仍存活
+        status, _ = _get(server + f"/admin/api/state?key={KEY}")
+        assert status == 200

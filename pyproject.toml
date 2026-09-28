@@ -7,7 +7,10 @@ name = "clipper"  # 案例一模块名,保留历史(仓库已更名 TrapLab)
 version = "0.1.0"
 description = "Clipboard guardian: detects verified Bitcoin/Ethereum addresses in your clipboard and warns you before you paste"
 requires-python = ">=3.10"
-dependencies = ["pycryptodome>=3.19"]
+dependencies = [
+    "pycryptodome>=3.19",
+    "pyyaml>=6.0.3",
+]
 
 [project.scripts]
 clipper = "clipper.cli:main"

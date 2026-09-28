@@ -24,3 +24,6 @@ dist/
 # Foundry 编译产物(phishing 演示代币)
 scripts/contracts/cache/
 scripts/contracts/out/
+
+# 钓鱼实验室:含私钥的本地配置,绝不入库
+scripts/config.yaml

