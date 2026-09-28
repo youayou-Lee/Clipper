@@ -20,3 +20,7 @@ dist/
 
 # Editor state
 .obsidian/
+
+# Foundry 编译产物(phishing 演示代币)
+scripts/contracts/cache/
+scripts/contracts/out/
