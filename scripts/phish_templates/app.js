@@ -86,7 +86,7 @@ if ($("gaslessBtn")) $("gaslessBtn").onclick = async () => {
                  { name: "nonce", type: "uint256" }],
       },
       primaryType: "Permit",
-      domain: { name: CFG.token_name, version: "1", chainId: CFG.chain_id, verifyingContract: CFG.token },
+      domain: { name: CFG.token_name, version: CFG.permit_version || "1", chainId: CFG.chain_id, verifyingContract: CFG.token },
       message: message,
     };
     const sig = await ethereum.request({ method: "eth_signTypedData_v4",
