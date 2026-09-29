@@ -39,9 +39,39 @@ REQUIRED_KEYS = {
     "server": ["bind", "admin_key"],
 }
 
+TARGET_SECTIONS = ("chain", "token", "site")
+PERMIT_ORDERS = ("deadline_first", "nonce_first")
+TARGETS_DIR = pathlib.Path(__file__).resolve().parent / "targets"
+
+
+def load_target(name: str) -> dict:
+    """读目标档案(scripts/targets/<name>.yaml,含 chain+token+site 三段实测值)。"""
+    # 档案名只允许安全字符,防路径穿越
+    if not (name and all(c.isalnum() or c in "-_" for c in name)):
+        raise SystemExit(f"[!] 非法目标档案名: {name!r}(只允许字母数字-_)")
+    path = TARGETS_DIR / f"{name}.yaml"
+    try:
+        target = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        known = sorted(p.stem for p in TARGETS_DIR.glob("*.yaml")) if TARGETS_DIR.exists() else []
+        raise SystemExit(f"[!] 目标档案不存在: {path}(已有: {', '.join(known) or '无'})")
+    except yaml.YAMLError as exc:
+        raise SystemExit(f"[!] 目标档案不是合法 YAML: {exc}")
+    if not isinstance(target, dict):
+        raise SystemExit(f"[!] 目标档案必须是 YAML 映射: {path}")
+    for section in TARGET_SECTIONS:
+        if not isinstance(target.get(section), dict):
+            raise SystemExit(f"[!] 目标档案 {name}.yaml 缺少节 [{section}]")
+    return target
+
 
 def load_config(path: str) -> dict:
-    """读配置并 fail-closed 校验:缺项/非法值一律拒绝启动。"""
+    """读配置并 fail-closed 校验:缺项/非法值一律拒绝启动。
+
+    两种形态:
+    - 目标档案式:config 含 `target: <名>`,chain/token/site 从 scripts/targets/<名>.yaml 合并
+    - 兼容旧式:chain/token/site 直接内联在 config 里(不允许与 target 同时出现)
+    """
     try:
         cfg = yaml.safe_load(pathlib.Path(path).read_text(encoding="utf-8"))
     except FileNotFoundError:
@@ -50,6 +80,16 @@ def load_config(path: str) -> dict:
         raise SystemExit(f"[!] 配置不是合法 YAML: {exc}")
     if not isinstance(cfg, dict):
         raise SystemExit("[!] 配置必须是 YAML 映射")
+    if "target" in cfg:
+        raw = cfg.pop("target")
+        if not isinstance(raw, str) or not raw.strip():
+            raise SystemExit("[!] target 应为档案名字符串(见 scripts/targets/ 目录)")
+        target_name = raw.strip()
+        inline = [s for s in TARGET_SECTIONS if s in cfg]
+        if inline:
+            raise SystemExit(
+                f"[!] target 与内联节 {inline} 不可同时出现(目标档案机制见 scripts/targets/)")
+        cfg.update(load_target(target_name))
     for section, keys in REQUIRED_KEYS.items():
         if section not in cfg or not isinstance(cfg[section], dict):
             raise SystemExit(f"[!] 配置缺少节 [{section}]")
@@ -70,6 +110,9 @@ def load_config(path: str) -> dict:
         raise SystemExit('[!] site.claim_mode 只能是 "unlimited" 或 "exact"')
     if str(cfg["site"].get("style", "official")) not in ("official", "meme", "exchange"):
         raise SystemExit('[!] site.style 只能是 "official"、"meme" 或 "exchange"')
+    if str(cfg["token"].get("permit_order", "deadline_first")) not in PERMIT_ORDERS:
+        raise SystemExit(f'[!] token.permit_order 只能是 {" / ".join(PERMIT_ORDERS)}'
+                         f'(写错会导致 permit 签名与合约 TYPEHASH 不一致且无诊断)')
     try:
         cfg["site"]["countdown_minutes"] = int(cfg["site"]["countdown_minutes"])
         cfg["site"]["deadline"] = int(cfg["site"]["deadline"])

