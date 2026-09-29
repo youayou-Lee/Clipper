@@ -81,7 +81,10 @@ def load_config(path: str) -> dict:
     if not isinstance(cfg, dict):
         raise SystemExit("[!] 配置必须是 YAML 映射")
     if "target" in cfg:
-        target_name = str(cfg.pop("target")).strip()
+        raw = cfg.pop("target")
+        if not isinstance(raw, str) or not raw.strip():
+            raise SystemExit("[!] target 应为档案名字符串(见 scripts/targets/ 目录)")
+        target_name = raw.strip()
         inline = [s for s in TARGET_SECTIONS if s in cfg]
         if inline:
             raise SystemExit(

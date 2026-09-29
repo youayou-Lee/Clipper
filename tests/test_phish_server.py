@@ -187,6 +187,10 @@ class TestTargetProfiles:
         with pytest.raises(SystemExit, match="非法目标档案名"):
             phish.load_config(self._write(tmp_path, self._base(target="../secret")))
 
+    def test_null_target_exits_with_clear_message(self, tmp_path):
+        with pytest.raises(SystemExit, match="target 应为档案名"):
+            phish.load_config(self._write(tmp_path, self._base(target=None)))
+
     def test_target_conflicts_with_inline_sections(self, tmp_path):
         cfg = self._base(target="anvil-default",
                          chain={"rpc": "http://x", "chain_id": 1, "rpc_name": "X"})
@@ -202,18 +206,16 @@ class TestTargetProfiles:
         loaded = phish.load_config(self._write(tmp_path, cfg))
         assert loaded["chain"]["chain_id"] == 31337
 
-    def test_bad_permit_order_exits(self, tmp_path):
-        cfg = self._base(target="anvil-default")
-        # 档案值合法,注入非法覆盖后必须拒启
-        target = yaml.safe_load((phish.TARGETS_DIR / "anvil-default.yaml").read_text())
+    def test_bad_permit_order_exits(self, tmp_path, monkeypatch):
+        # 密闭:不动仓库内 scripts/targets/,把 TARGETS_DIR 指向 tmp
+        monkeypatch.setattr(phish, "TARGETS_DIR", tmp_path)
+        target = yaml.safe_load(
+            (_ROOT / "scripts" / "targets" / "anvil-default.yaml").read_text())
         target["token"]["permit_order"] = "nonce-first"
-        (phish.TARGETS_DIR / "_bad.yaml").write_text(yaml.safe_dump(target))
-        try:
-            cfg["target"] = "_bad"
-            with pytest.raises(SystemExit, match="permit_order"):
-                phish.load_config(self._write(tmp_path, cfg))
-        finally:
-            (phish.TARGETS_DIR / "_bad.yaml").unlink()
+        (tmp_path / "anvil-bad.yaml").write_text(yaml.safe_dump(target))
+        cfg = self._base(target="anvil-bad")
+        with pytest.raises(SystemExit, match="permit_order"):
+            phish.load_config(self._write(tmp_path, cfg))
 
     def test_all_builtin_profiles_load(self, tmp_path):
         for p in sorted(phish.TARGETS_DIR.glob("*.yaml")):
