@@ -10,6 +10,7 @@ token:
   address: "0x55d398326f99059fF775485246999027B3197955"
   name: "Tether USD"
   symbol: "USDT"
+  # 无 permit,故不填 permit_version/permit_order(填了也不生效,勿画蛇添足)
 
 site:
   project: "星穹协议 NovaChain"

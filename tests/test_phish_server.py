@@ -23,6 +23,15 @@ EXAMPLE = _ROOT / "scripts" / "config.example.yaml"
 KEY = yaml.safe_load(EXAMPLE.read_text())["server"]["admin_key"]
 
 
+@pytest.fixture(autouse=True)
+def _restore_handler_cfg():
+    """任何测试改了全局 Handler.cfg(档案/皮肤/permit 覆盖),测后必恢复,防断言失败泄漏。"""
+    snapshot = getattr(phish.Handler, "cfg", None)
+    yield
+    if snapshot is not None:
+        phish.Handler.cfg = snapshot
+
+
 @pytest.fixture()
 def server(monkeypatch):
     cfg = phish.load_config(str(EXAMPLE))
