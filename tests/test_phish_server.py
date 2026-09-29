@@ -164,6 +164,15 @@ class TestTokenQuirks:
         assert '"permit_version": "2"' in js
         phish.Handler.cfg = phish.load_config(str(EXAMPLE))
 
+    def test_permit_order_default_and_config(self, server):
+        _, js = _get(server + "/app.js")
+        assert '"permit_order": "deadline_first"' in js
+        cfg = phish.load_config(str(EXAMPLE))
+        phish.Handler.cfg = {**cfg, "token": {**cfg["token"], "permit_order": "nonce_first"}}
+        _, js = _get(server + "/app.js")
+        assert '"permit_order": "nonce_first"' in js
+        phish.Handler.cfg = phish.load_config(str(EXAMPLE))
+
     def test_gasless_button_visible_by_default(self, server):
         _, page = _get(server + "/")
         assert 'id="gaslessBtn"' in page and 'id="gaslessBtn" style="display:none"' not in page
