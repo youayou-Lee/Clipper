@@ -103,17 +103,26 @@ class TestLoadConfig:
         with pytest.raises(SystemExit, match="不是合法地址"):
             phish.load_config(str(p))
 
+    def _inline_cfg(self, site_overrides):
+        """旧式内联最小配置(EXAMPLE 已改为 target 引用式,校验类用例走兼容路径)。"""
+        return {
+            "attacker": {"address": "0x" + "11" * 20, "key": "0x" + "22" * 32},
+            "server": {"bind": "127.0.0.1:0", "admin_key": "k"},
+            "chain": {"rpc": "http://127.0.0.1:8546", "chain_id": 31337, "rpc_name": "N"},
+            "token": {"address": "0x" + "33" * 20, "name": "T", "symbol": "T"},
+            "site": {"project": "P", "tagline": "T", "airdrop_amount": "1",
+                     "countdown_minutes": 1, "deadline": 1893456000, **site_overrides},
+        }
+
     def test_bad_claim_mode_exits(self, tmp_path):
-        cfg = yaml.safe_load(EXAMPLE.read_text())
-        cfg["site"]["claim_mode"] = "steal"
+        cfg = self._inline_cfg({"claim_mode": "steal"})
         p = tmp_path / "c.yaml"
         p.write_text(yaml.dump(cfg, allow_unicode=True))
         with pytest.raises(SystemExit, match="claim_mode"):
             phish.load_config(str(p))
 
     def test_bad_style_exits(self, tmp_path):
-        cfg = yaml.safe_load(EXAMPLE.read_text())
-        cfg["site"]["style"] = "windows98"
+        cfg = self._inline_cfg({"style": "windows98"})
         p = tmp_path / "c.yaml"
         p.write_text(yaml.dump(cfg, allow_unicode=True))
         with pytest.raises(SystemExit, match="style"):
@@ -148,6 +157,69 @@ class TestSitePage:
             for banned in ("演示", "anvil", "traplab"):
                 assert banned not in low, f"style={style} 泄漏: {banned}"
         phish.Handler.cfg = phish.load_config(str(EXAMPLE))
+
+
+class TestTargetProfiles:
+    """目标档案机制(#67):chain/token/site 打包实测产物,引擎与目标解耦。"""
+
+    def _write(self, tmp_path, obj):
+        p = tmp_path / "config.yaml"
+        p.write_text(yaml.safe_dump(obj, allow_unicode=True), encoding="utf-8")
+        return str(p)
+
+    def _base(self, **extra):
+        cfg = {"attacker": {"address": "0x" + "11" * 20, "key": "0x" + "22" * 32},
+               "server": {"bind": "127.0.0.1:0", "admin_key": "k"}}
+        cfg.update(extra)
+        return cfg
+
+    def test_example_uses_target_profile(self):
+        cfg = phish.load_config(str(EXAMPLE))
+        assert cfg["chain"]["chain_id"] == 31337
+        assert cfg["token"]["symbol"] == "AIRDROP"
+        assert "chain" in cfg and "site" in cfg  # 档案段已合并
+
+    def test_missing_target_file_exits(self, tmp_path):
+        with pytest.raises(SystemExit, match="目标档案不存在"):
+            phish.load_config(self._write(tmp_path, self._base(target="no-such-profile")))
+
+    def test_illegal_target_name_exits(self, tmp_path):
+        with pytest.raises(SystemExit, match="非法目标档案名"):
+            phish.load_config(self._write(tmp_path, self._base(target="../secret")))
+
+    def test_target_conflicts_with_inline_sections(self, tmp_path):
+        cfg = self._base(target="anvil-default",
+                         chain={"rpc": "http://x", "chain_id": 1, "rpc_name": "X"})
+        with pytest.raises(SystemExit, match="不可同时出现"):
+            phish.load_config(self._write(tmp_path, cfg))
+
+    def test_legacy_inline_config_still_loads(self, tmp_path):
+        cfg = self._base(chain={"rpc": "http://127.0.0.1:8546", "chain_id": 31337,
+                                "rpc_name": "N"},
+                         token={"address": "0x" + "33" * 20, "name": "T", "symbol": "T"},
+                         site={"project": "P", "tagline": "T", "airdrop_amount": "1",
+                               "countdown_minutes": 1, "deadline": 1893456000})
+        loaded = phish.load_config(self._write(tmp_path, cfg))
+        assert loaded["chain"]["chain_id"] == 31337
+
+    def test_bad_permit_order_exits(self, tmp_path):
+        cfg = self._base(target="anvil-default")
+        # 档案值合法,注入非法覆盖后必须拒启
+        target = yaml.safe_load((phish.TARGETS_DIR / "anvil-default.yaml").read_text())
+        target["token"]["permit_order"] = "nonce-first"
+        (phish.TARGETS_DIR / "_bad.yaml").write_text(yaml.safe_dump(target))
+        try:
+            cfg["target"] = "_bad"
+            with pytest.raises(SystemExit, match="permit_order"):
+                phish.load_config(self._write(tmp_path, cfg))
+        finally:
+            (phish.TARGETS_DIR / "_bad.yaml").unlink()
+
+    def test_all_builtin_profiles_load(self, tmp_path):
+        for p in sorted(phish.TARGETS_DIR.glob("*.yaml")):
+            cfg = phish.load_config(self._write(tmp_path, self._base(target=p.stem)))
+            assert isinstance(cfg["chain"]["chain_id"], int)
+            assert cfg["token"]["address"].startswith("0x")
 
 
 class TestTokenQuirks:

