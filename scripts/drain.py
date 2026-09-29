@@ -1,6 +1,9 @@
 """攻击者收割脚本(第五代攻击复现演示,Issue #56)。
 
-仅限本地 Anvil 模拟链 + 公开测试私钥,零真实资产;禁止指向任何真实环境。
+能力边界:**读**(余额/交易解析)可在任意 EVM 链上工作;**发送**(permit 上链、
+transferFrom)是真实交易,生产演练仅限 Anvil 模拟链 + 公开测试私钥。
+⚠ ATTACKER / DEFAULT_ATTACKER_KEY 为 Anvil 硬编码地址,主网误用会把资产
+  转进人人可控的地址(参见 CHANGELOG #63:0xf39F 转入 1 POL 同区块被扫)。
 
 两条路径:
   1. approve:受害者已在钓鱼页签了 approve 交易 -- 给出该交易哈希,本脚本从链上

@@ -59,6 +59,11 @@ def load_target(name: str) -> dict:
         raise SystemExit(f"[!] 目标档案不是合法 YAML: {exc}")
     if not isinstance(target, dict):
         raise SystemExit(f"[!] 目标档案必须是 YAML 映射: {path}")
+    unknown = set(target) - set(TARGET_SECTIONS)
+    if unknown:
+        raise SystemExit(
+            f"[!] 目标档案 {path} 含未知节 {sorted(unknown)}(只允许: {', '.join(TARGET_SECTIONS)};"
+            f"是 tokens 这类拼写笔误?字段(如 permit_order)应在 token 节内)")
     for section in TARGET_SECTIONS:
         if not isinstance(target.get(section), dict):
             raise SystemExit(f"[!] 目标档案 {name}.yaml 缺少节 [{section}]")

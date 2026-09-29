@@ -54,7 +54,7 @@ permit 的 nonce 固定 0,同一受害者只能演示一次 permit,重演请重�
 
 ## 6. 为新目标代币/链产出档案(targets)
 
-引擎与目标解耦:`scripts/targets/<名>.yaml` 打包 `chain`+`token`+`site` 三段实测值,`config.yaml` 以 `target: <名>` 引用。新增一套目标的流程(每一步都有实测依据,详见 CHANGELOG #63):
+引擎与目标解耦:`scripts/targets/<名>.yaml` 打包 `chain`+`token`+`site` 三段实测值,`config.yaml` 以 `target: <名>` 引用。新增一套目标的流程如下(方法论首次成文于 2026-09 主网实测:USDC 暗号破译与 USDT0 判死均由此法得出,证据档案见 targets/*.yaml 注释):
 
 1. **链三件套**:`rpc`(用 curl POST eth_chainId 验可达,公共 RPC 注意 Cloudflare 拦 urllib——服务端已带浏览器 UA)、`chain_id`(必须整数,写进签名防重放)、`rpc_name`(MetaMask 显示名,拟真可任意)。
 2. **代币地址**:Polygonscan/BscScan 等官方浏览器认准蓝勾条目取合约地址。
