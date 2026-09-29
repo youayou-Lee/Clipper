@@ -148,7 +148,9 @@ STORE = EventStore()
 
 def rpc_call(url: str, method: str, params):
     payload = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode()
-    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+    # 公共 RPC(Cloudflare)默认拦 python-urllib 的 UA,必须伪装成浏览器
+    req = urllib.request.Request(url, data=payload, headers={
+        "Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (X11; Linux x86_64)"})
     with urllib.request.urlopen(req, timeout=15) as resp:
         out = json.loads(resp.read())
     if "error" in out:
