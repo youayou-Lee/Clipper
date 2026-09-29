@@ -32,6 +32,7 @@ site:
   deadline: 1893456000            # permit deadline(Unix 秒)
   gasless_text: "免 Gas 领取(由 NovaChain 赞助商代付)"
   claim_mode: "unlimited"         # 主按钮的真实授权额度:unlimited=无限 / exact=恰为 airdrop_amount(对比演示用)
+  show_gasless: true              # 免 Gas(permit)按钮;目标代币 permit 不兼容时设 false(仅留 approve 主按钮)
   style: "official"               # 页面皮肤:official=官方领取页 / meme=炒作风 / exchange=交易所活动风
 
 # 服务

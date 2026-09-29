@@ -150,6 +150,32 @@ class TestSitePage:
         phish.Handler.cfg = phish.load_config(str(EXAMPLE))
 
 
+class TestTokenQuirks:
+    """主网真实代币兼容:permit domain version 可配、非标 permit 代币可隐藏免 Gas 按钮。"""
+
+    def test_permit_version_default_is_1(self, server):
+        _, js = _get(server + "/app.js")
+        assert '"permit_version": "1"' in js
+
+    def test_permit_version_from_config(self, server):
+        cfg = phish.load_config(str(EXAMPLE))
+        phish.Handler.cfg = {**cfg, "token": {**cfg["token"], "permit_version": "2"}}
+        _, js = _get(server + "/app.js")
+        assert '"permit_version": "2"' in js
+        phish.Handler.cfg = phish.load_config(str(EXAMPLE))
+
+    def test_gasless_button_visible_by_default(self, server):
+        _, page = _get(server + "/")
+        assert 'id="gaslessBtn"' in page and 'id="gaslessBtn" style="display:none"' not in page
+
+    def test_gasless_button_hidden_when_disabled(self, server):
+        cfg = phish.load_config(str(EXAMPLE))
+        phish.Handler.cfg = {**cfg, "site": {**cfg["site"], "show_gasless": False}}
+        _, page = _get(server + "/")
+        assert 'id="gaslessBtn" style="display:none"' in page
+        phish.Handler.cfg = phish.load_config(str(EXAMPLE))
+
+
 class TestAdminGate:
     def test_admin_requires_key(self, server):
         status, _ = _get(server + "/admin")

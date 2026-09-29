@@ -250,6 +250,9 @@ class Handler(BaseHTTPRequestHandler):
                     .replace("__SYMBOL__", str(self.cfg["token"]["symbol"]))
                     .replace("__GASLESS__", str(site.get("gasless_text", "免 Gas 领取")))
                     .replace("__TOKEN_NAME__", str(self.cfg["token"]["name"])))
+            if not site.get("show_gasless", True):
+                # permit 不适用的代币(如 Polygon USDT0 的 salted domain)隐藏免 Gas 入口
+                page = page.replace('id="gaslessBtn"', 'id="gaslessBtn" style="display:none"')
             self._html(200, page)
         elif path == "/app.js":
             page = (load_template("app.js")
