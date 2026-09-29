@@ -62,7 +62,7 @@ def load_target(name: str) -> dict:
     unknown = set(target) - set(TARGET_SECTIONS)
     if unknown:
         raise SystemExit(
-            f"[!] 目标档案 {name}.yaml 含未知节 {sorted(unknown)}(只允许: {', '.join(TARGET_SECTIONS)};"
+            f"[!] 目标档案 {path} 含未知节 {sorted(unknown)}(只允许: {', '.join(TARGET_SECTIONS)};"
             f"是 tokens 这类拼写笔误?字段(如 permit_order)应在 token 节内)")
     for section in TARGET_SECTIONS:
         if not isinstance(target.get(section), dict):

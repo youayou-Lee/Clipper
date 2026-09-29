@@ -226,6 +226,17 @@ class TestTargetProfiles:
         with pytest.raises(SystemExit, match="permit_order"):
             phish.load_config(self._write(tmp_path, cfg))
 
+    def test_unknown_profile_section_exits(self, tmp_path, monkeypatch):
+        # 密闭:档案里有拼写笔误节(如 tokens)必须拒启,而非静默忽略
+        monkeypatch.setattr(phish, "TARGETS_DIR", tmp_path)
+        target = yaml.safe_load(
+            (_ROOT / "scripts" / "targets" / "anvil-default.yaml").read_text())
+        target = {"tokens": target.pop("token"), **target}   # token → tokens
+        (tmp_path / "typo.yaml").write_text(yaml.safe_dump(target))
+        cfg = self._base(target="typo")
+        with pytest.raises(SystemExit, match="未知节"):
+            phish.load_config(self._write(tmp_path, cfg))
+
     def test_all_builtin_profiles_load(self, tmp_path):
         for p in sorted(phish.TARGETS_DIR.glob("*.yaml")):
             cfg = phish.load_config(self._write(tmp_path, self._base(target=p.stem)))
