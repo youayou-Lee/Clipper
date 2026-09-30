@@ -5,7 +5,7 @@
 #   严禁将本服务暴露到公网或指向任何真实用户——那正是本案例要演示的犯罪行为。
 #   本文件含私钥,**已加入 .gitignore,绝不入库**。
 
-# 目标档案:链+代币+页面文案的打包实测产物,见 scripts/targets/*.yaml
+# 目标档案:链+代币+页面文案的打包实测产物,见 phishlab/targets/*.yaml
 # 可选值看目录:anvil-default / polygon-usdc / bsc-usdt(或自建)
 target: anvil-default
 

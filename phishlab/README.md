@@ -42,9 +42,9 @@
 ```bash
 anvil --chain-id 31337 --port 8546 &                      # 1. 起测试链
 # 2. 部署假币:forge create PhishingToken(私钥用 Anvil 公开测试钥,完整命令见 runbook 第 1 节)
-cd scripts/contracts && forge create PhishingToken --broadcast --private-key <Anvil测试钥> --rpc-url http://127.0.0.1:8546
+cd phishlab/contracts && forge create PhishingToken --broadcast --private-key <Anvil测试钥> --rpc-url http://127.0.0.1:8546
 cp config.example.yaml config.yaml                        # 3. 配置(填假币地址,target: anvil-default)
-uv run python scripts/phish_server.py --config scripts/config.yaml   # 4. 起钓鱼实验室
+uv run python phishlab/phish_server.py --config phishlab/config.yaml   # 4. 起钓鱼实验室
 ```
 
 - 受害者:`http://localhost:8088/` — 连钱包 →「立即领取」(Approve 交易)或「免 Gas 领取」(Permit 签名)

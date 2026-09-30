@@ -4,7 +4,7 @@
 > 各案例的完整说明见各自 README:
 >
 > - **案例一:剪贴板守护**(Clipper 木马复现与应对)— [`clipper/README.md`](clipper/README.md)
-> - **案例二:Web3 授权钓鱼实验室**(Approve / Permit 复现)— [`scripts/README.md`](scripts/README.md),详细 Runbook 见 [`docs/phishing-runbook.md`](docs/phishing-runbook.md)
+> - **案例二:Web3 授权钓鱼实验室**(Approve / Permit 复现)— [`phishlab/README.md`](phishlab/README.md),详细 Runbook 见 [`docs/phishing-runbook.md`](docs/phishing-runbook.md)
 
 > **免责声明**:本项目仅用于防御研究、安全教育与意识提升。
 > 所有动手实践仅限**本机、自有测试机与自有内网实验室**,
@@ -20,14 +20,14 @@
 webhook 外推、威胁研究驱动的检测(进行中)。快速开始与机制明细见 [`clipper/README.md`](clipper/README.md)。
 最小上手:`uv sync && uv run clipper watch`(常驻监控;Linux 需 `xclip` 或 `wl-clipboard`)。
 
-## 案例二:Web3 授权钓鱼实验室(`scripts/`)
+## 案例二:Web3 授权钓鱼实验室(`phishlab/`)
 
 在自有内网实验室复现 Approve / EIP-2612 Permit 授权钓鱼的完整攻击链:
 受害者侧 100% 拟真假空投站(Approve 交易 / 免 Gas Permit 签名两条路),
 攻击者侧 `/admin` 收割台(实时事件流、待收割清单、一键收割)。
 默认目标为 Anvil 本地测试链(零真实资产),引擎与目标解耦,
-`scripts/targets/` 已实测产出 Anvil / Polygon USDC / BSC USDT 等目标档案。
-运行步骤见 [`scripts/README.md`](scripts/README.md)。
+`phishlab/targets/` 已实测产出 Anvil / Polygon USDC / BSC USDT 等目标档案。
+运行步骤见 [`phishlab/README.md`](phishlab/README.md)。
 
 ## 威胁研究
 
