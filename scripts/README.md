@@ -30,7 +30,10 @@
 | `targets/` | 目标档案:`<链+代币+页面文案>` 打包的实测 YAML(`anvil-default` / `polygon-usdc` / `bsc-usdt`,或自建) |
 | `contracts/` | Foundry 工程,`PhishingToken.sol` 测试假币 |
 | `config.example.yaml` | 配置模板(真实 `config.yaml` 含私钥,已 gitignore) |
-| `demo.py` / `e2e_platform.py` | 端到端演示与三端剪贴板实测(属案例一共用) |
+| `lab/` | 演练收尾/清理脚本(如 `cleanup-payload.ps1`,清理演练残留) |
+
+> 注:本目录还含 `demo.py`(8 场景端到端演示)与 `e2e_platform.py`(三端剪贴板实测),
+> 属案例一共用的端到端验证脚本,见 `clipper/README.md`。
 
 ## 快速开始(Anvil 本地链)
 
@@ -38,7 +41,8 @@
 
 ```bash
 anvil --chain-id 31337 --port 8546 &                      # 1. 起测试链
-cd scripts/contracts && forge create PhishingToken ...    # 2. 部署假币(私钥用 Anvil 公开测试钥)
+# 2. 部署假币:forge create PhishingToken(私钥用 Anvil 公开测试钥,完整命令见 runbook 第 1 节)
+cd scripts/contracts && forge create PhishingToken --broadcast --private-key <Anvil测试钥> --rpc-url http://127.0.0.1:8546
 cp config.example.yaml config.yaml                        # 3. 配置(填假币地址,target: anvil-default)
 uv run python scripts/phish_server.py --config scripts/config.yaml   # 4. 起钓鱼实验室
 ```

@@ -18,6 +18,7 @@
 
 示例应对策略:完全匹配替换(默认)、替换后告警 + 审计、`clipper paste` 粘贴时校验、
 webhook 外推、威胁研究驱动的检测(进行中)。快速开始与机制明细见 [`clipper/README.md`](clipper/README.md)。
+最小上手:`uv sync && uv run clipper watch`(常驻监控;Linux 需 `xclip` 或 `wl-clipboard`)。
 
 ## 案例二:Web3 授权钓鱼实验室(`scripts/`)
 
