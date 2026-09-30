@@ -27,6 +27,7 @@ def load_wordlist() -> tuple[list[str], frozenset[str]]:
 
 
 _WORDLIST, _WORDSET = load_wordlist()
+_WORD_TO_INDEX = {w: i for i, w in enumerate(_WORDLIST)}
 
 
 @dataclass(frozen=True)
@@ -51,8 +52,8 @@ def validate_checksum(phrase: str) -> bool:
     if len(words) not in VALID_LENGTHS:
         return False
     try:
-        indices = [_WORDLIST.index(w) for w in words]
-    except ValueError:
+        indices = [_WORD_TO_INDEX[w] for w in words]
+    except (KeyError, ValueError):
         return False
     bits = "".join(f"{i:011b}" for i in indices)
     checksum_len = (len(words) * 11) // 33
