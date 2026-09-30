@@ -36,6 +36,7 @@ webhook 外推、威胁研究驱动的检测(进行中)。快速开始与机制�
 
 - [`docs/research/attack-chain.md`](docs/research/attack-chain.md) — 攻击链全景(分发/免杀/加载/持久化/劫持/变现,全部厂商报告溯源)
 - [`docs/research/defense-mapping.md`](docs/research/defense-mapping.md) — 逐环节检测点映射、对策分级与攻防不对称分析
+- [`docs/research/mnemonic-stealer.md`](docs/research/mnemonic-stealer.md) — 助记词木马调研:机制/案例/平台实现难点/案例三复现方向([Issue #80](https://github.com/youayou-Lee/TrapLab/issues/80))
 
 ## 工程规范
 
