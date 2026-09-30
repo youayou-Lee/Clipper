@@ -1,7 +1,7 @@
 """钓鱼实验室服务(phishlab/phish_server.py)的 L1 测试。
 
 覆盖:config fail-closed 校验、事件流→待收割清单、/admin 口令门、
-单坏请求不崩服务。收割的链上行为由 tests/test_drain.py 的 Anvil e2e 覆盖。
+单坏请求不崩服务。收割的链上行为由 phishlab/tests/test_drain.py 的 Anvil e2e 覆盖。
 """
 
 import importlib.util
@@ -13,7 +13,7 @@ from http.server import ThreadingHTTPServer
 import pytest
 import yaml
 
-_ROOT = pathlib.Path(__file__).parent.parent
+_ROOT = pathlib.Path(__file__).parent.parent.parent
 _spec = importlib.util.spec_from_file_location(
     "phish_server", _ROOT / "phishlab" / "phish_server.py")
 phish = importlib.util.module_from_spec(_spec)

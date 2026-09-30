@@ -4,7 +4,7 @@
 > 各案例的完整说明见各自 README:
 >
 > - **案例一:剪贴板守护**(Clipper 木马复现与应对)— [`clipper/README.md`](clipper/README.md)
-> - **案例二:Web3 授权钓鱼实验室**(Approve / Permit 复现)— [`phishlab/README.md`](phishlab/README.md),详细 Runbook 见 [`docs/phishing-runbook.md`](docs/phishing-runbook.md)
+> - **案例二:Web3 授权钓鱼实验室**(Approve / Permit 复现)— [`phishlab/README.md`](phishlab/README.md),详细 Runbook 见 [`phishlab/docs/phishing-runbook.md`](phishlab/docs/phishing-runbook.md)
 
 > **免责声明**:本项目仅用于防御研究、安全教育与意识提升。
 > 所有动手实践仅限**本机、自有测试机与自有内网实验室**,

@@ -18,7 +18,7 @@ from contextlib import contextmanager
 
 import pytest
 
-_ROOT = pathlib.Path(__file__).parent.parent
+_ROOT = pathlib.Path(__file__).parent.parent.parent
 _spec = importlib.util.spec_from_file_location("drain", _ROOT / "phishlab" / "drain.py")
 drain = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(drain)

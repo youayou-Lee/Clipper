@@ -18,7 +18,7 @@
 - **Permit**(EIP-2612):一次 EIP-712 签名即完成授权,**免 gas、不出交易**,受害者感知更弱。
 
 授权到手后,攻击者随时用 `transferFrom` 把受害者代币转空——这就是"收割"。
-页面 100% 拟真、不含任何演示字样;安全边界由 `docs/phishing-runbook.md` 与 `/admin` 横幅承载。
+页面 100% 拟真、不含任何演示字样;安全边界由 [`docs/phishing-runbook.md`](docs/phishing-runbook.md)(本目录)与 `/admin` 横幅承载。
 
 ## 目录结构
 
@@ -32,12 +32,11 @@
 | `config.example.yaml` | 配置模板(真实 `config.yaml` 含私钥,已 gitignore) |
 | `lab/` | 演练收尾/清理脚本(如 `cleanup-payload.ps1`,清理演练残留) |
 
-> 注:本目录还含 `demo.py`(8 场景端到端演示)与 `e2e_platform.py`(三端剪贴板实测),
-> 属案例一共用的端到端验证脚本,见 `clipper/README.md`。
+> 注:案例一的端到端演示脚本(`demo.py`、`e2e_platform.py`)在 `clipper/scripts/`,见 `clipper/README.md`。
 
 ## 快速开始(Anvil 本地链)
 
-完整步骤见 [`docs/phishing-runbook.md`](../docs/phishing-runbook.md),概要:
+完整步骤见 [`docs/phishing-runbook.md`](docs/phishing-runbook.md),概要:
 
 ```bash
 anvil --chain-id 31337 --port 8546 &                      # 1. 起测试链

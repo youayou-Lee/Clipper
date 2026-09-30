@@ -3,7 +3,7 @@
 不需要剪贴板后端,直接扫描文本;每个场景带预期结果并自动判定 PASS/FAIL,
 因此也可以当作冒烟测试用:
 
-    .venv/bin/python scripts/demo.py
+    .venv/bin/python clipper/scripts/demo.py
 
 演示中出现的地址全部来自 BIP-173 / EIP-55 官方测试向量等公开资料。
 """

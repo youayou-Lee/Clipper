@@ -2,7 +2,7 @@
 
 > 本目录是 TrapLab 的第一条案例线:复现 **Clipper 木马**(剪贴板劫持木马)的核心机制,
 > 供公众分析其原理,在此基础上制定与验证应对策略;同时给出**示例应对策略**的实际实现。
-> 案例二(Web3 授权钓鱼)见仓库根 README 与 `scripts/README.md`。
+> 案例二(Web3 授权钓鱼)见仓库根 README 与 `phishlab/README.md`。
 
 > **免责声明**:本项目仅用于防御研究、安全教育与意识提升。
 > 仓库中的"替换写回"等机制默认工作在**本机、防护者视角**(替换目标是本机固化的安全地址,
@@ -25,7 +25,7 @@
 | **替换写回**(核心机制) | `safe.py` + `cli.py` | 复现"粘贴前改写地址"的完整链路——防护视角:替换为本机固化的安全地址变体 |
 | 告警与审计 | `alert.py` + `history.py` | 控制台告警 + sqlite 历史(保留原始地址) |
 | webhook 通知 | `notify.py` | 检出事件外推 |
-| 端到端验证 | `scripts/`(仓库根) | 真机剪贴板读写验证脚本、8 场景演示 |
+| 端到端验证 | `scripts/`(本目录) | 真机剪贴板读写验证脚本、8 场景演示 |
 
 ## 示例应对策略
 
@@ -43,8 +43,8 @@
 uv sync                                  # 或先安装 uv:pip install uv
 uv run clipper watch                     # 常驻监控:检出地址→告警→替换写回(默认完全匹配模式,其余见 --help)
 uv run clipper address                   # 查看本机固定的安全地址
-uv run pytest tests/ -v                  # 测试
-uv run python scripts/demo.py            # 8 场景端到端演示
+uv run pytest clipper/tests -v           # 测试
+uv run python clipper/scripts/demo.py    # 8 场景端到端演示
 ```
 
 剪贴板后端依赖:Windows/macOS 内置;Linux 需 `xclip`(X11)或 `wl-clipboard`(Wayland)。
