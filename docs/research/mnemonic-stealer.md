@@ -40,8 +40,9 @@
   攻击者服务器(报告中的 C2 域如 `secure-dp[.]com`)。
 - **意义**:证明"正经应用 + 合理权限(相册)+ 官方 OCR 库"即可通过两家商店审核,
   iOS 沙盒对**权限内**的行为无能为力。
-- 来源:卡巴斯基 Securelist(2025.02,Dmitry Kalinin & Sergey Puzan);
-  [SC World: SparkCat returns on app stores](https://www.scworld.com)(2026.04)。
+- 来源:[Securelist: SparkCat crypto stealer in Google Play and App Store](https://securelist.com/sparkcat-stealer-in-app-store-and-google-play/115385/)
+  (2024 年末发现,2025.02 发布);2026.04 有新变种再次过审上架两家商店的报道见
+  [SC World](https://www.scworld.com)。
 
 ### 3.2 SparkKitty(2025.06,卡巴斯基)——SparkCat 的"整相册回传"进化版
 
@@ -55,10 +56,11 @@
 
 ### 3.3 Efimer(2024.10–2025.07,卡巴斯基)——PC 端"剪肉 + 断根"二合一
 
-- **传播**:钓鱼邮件群发 + 被黑 WordPress 站投递;逾 5,000 名个人与企业用户中招,
-  诱导话术包含**虚假法律威胁**(声称下载"法律文书"查看)。
-- **技术**:clipper(替换剪贴板中的钱包地址)+ **检测剪贴板中的助记词并窃取**;
-  独特点是会**静默安装正版加密钱包**,用偷到的助记词导入后转走资金,变现链路完整。
+- **传播**:钓鱼邮件群发 + 被黑 WordPress 站/种子站投递,伪装成"法律文书"等诱饵文件;
+  逾 5,000 名个人与企业用户中招。
+- **技术**:本体为 ClipBanker 家族,clipper(替换剪贴板中的钱包地址)+ **持续检测剪贴板
+  中的助记词,命中即存为 SEED 文件回传**;同时截取屏幕;C2 走 Tor(curl + socks5)。
+  另有分支版本扫描浏览器扩展目录与钱包应用目录,直接回传钱包数据。
 - 来源:[Securelist: Efimer](https://securelist.com/efimer-trojan/117148/)、
   [卡巴斯基新闻稿](https://www.kaspersky.com/about/press-releases/kaspersky-uncovers-efimer-trojan-targeting-organizations-through-phishing-emails)。
 
@@ -71,8 +73,8 @@
 
 ### 3.5 补充参照
 
-- **SpyAgent**(IBM 报告):Android 木马窃取截图,在服务端筛含恢复短语的图片——
-  SparkKitty 路线的又一实例。
+- **SpyAgent**(McAfee,2024.09):Android 木马用 OCR 筛设备上的截图,回传含恢复短语的
+  图片内容——相册 OCR 路线的先例(早于 SparkCat 披露),经短信链接传播,主攻韩国市场。
 - **ComboJack**(Unit 42,2018)/ **首个上架 Google Play 的 clipper**(ESET,2019):
   剪贴板替换路线的早期节点,与本仓库案例一直接相关。
 
@@ -92,7 +94,7 @@
 
 - **PC**:技术上几乎无障碍(钩子、剪贴板、文件扫描全通),难点在**免杀与持久化**
   (杀软/EDR 对比、Tor C2 流量特征)——这正是 Crypto Clipper 用 Tor + USB 蠕虫解决的。
-- **Android**:文件窃取被沙盒挡住,主流路线收敛为**相册 + OCR**( SparkCat 路线);
+- **Android**:文件窃取被沙盒挡住,主流路线收敛为**相册 + OCR**(SparkCat 路线);
   键盘/剪贴板路线必须先过"无障碍服务"这道用户显式授权 + 商店审核的关卡。
 - **iOS**:最封闭——无键盘记录、无后台剪贴板、无跨 App 读取;**唯一成规模的真实攻击面
   就是相册权限 + 社工钓鱼**。SparkCat 系列证明:只要攻击藏在"合理权限内的行为",
