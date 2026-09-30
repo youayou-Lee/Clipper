@@ -19,7 +19,7 @@ clipper = "clipper.cli:main"
 dev = ["pytest>=8"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["clipper/tests", "phishlab/tests"]
 
 [tool.setuptools.packages.find]
 include = ["clipper*"]

@@ -1,6 +1,6 @@
 # TrapLab 工程规范(对 AI 协作者与人类同等生效)
 
-> 本仓库曾名 Clipper;现定位为**安全案例实验室**:每个案例独立成线(案例一:剪贴板守护,模块 `clipper/`;案例二:Web3 攻击复现,`scripts/`),后续按需扩展新方向。
+> 本仓库曾名 Clipper;现定位为**安全案例实验室**:每个案例独立成线(案例一:剪贴板守护,模块 `clipper/`;案例二:Web3 攻击复现,`phishlab/`),后续按需扩展新方向。
 
 完整版见 `docs/WORKFLOW.md`,本文件是每次开工前的速查约束。
 
@@ -13,7 +13,7 @@
    `git switch main && git pull --ff-only`。
 3. **测试红不 commit 不 push**:commit/push 前必跑(钩子会拦截 push):
    ```bash
-   uv run pytest tests/ -v
+   uv run pytest clipper/tests phishlab/tests -v
    ```
 4. **修 bug 先写复现测试**(红)再修,修完该测试永久留在回归集。
 5. **PR 描述四要素**:动机(关联 Issue 用 `Refs #N`,不用 `Closes`)/ 改动(逐模块一句话)/
@@ -26,9 +26,9 @@
 
 ## 测试
 
-- L1 单元:`tests/`,pytest 风格(存量 unittest 用例由 pytest 兼容运行)
+- L1 单元:`clipper/tests/` + `phishlab/tests/`,pytest 风格(存量 unittest 用例由 pytest 兼容运行)
 - L2 组件:fake clipboard backend 走 watch/_handle_content 链路
-- L3 端到端:`uv run python scripts/demo.py`(8 场景)+ 本机 xclip 实测
+- L3 端到端:`uv run python clipper/scripts/demo.py`(8 场景)+ 本机 xclip 实测
 
 ## 项目速览
 

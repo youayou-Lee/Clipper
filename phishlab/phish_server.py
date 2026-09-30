@@ -8,8 +8,8 @@
 配置读 config.yaml(模板见 config.example.yaml);缺项/非法值启动即报错(fail-closed)。
 
 用法:
-    cp scripts/config.example.yaml scripts/config.yaml   # 按需修改
-    uv run python scripts/phish_server.py --config scripts/config.yaml
+    cp phishlab/config.example.yaml phishlab/config.yaml   # 按需修改
+    uv run python phishlab/phish_server.py --config phishlab/config.yaml
 """
 
 import argparse
@@ -25,7 +25,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import yaml
 
 _ROOT = pathlib.Path(__file__).resolve().parent.parent
-_SPEC = importlib.util.spec_from_file_location("drain", _ROOT / "scripts" / "drain.py")
+_SPEC = importlib.util.spec_from_file_location("drain", _ROOT / "phishlab" / "drain.py")
 drain = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(drain)
 
@@ -45,7 +45,7 @@ TARGETS_DIR = pathlib.Path(__file__).resolve().parent / "targets"
 
 
 def load_target(name: str) -> dict:
-    """读目标档案(scripts/targets/<name>.yaml,含 chain+token+site 三段实测值)。"""
+    """读目标档案(phishlab/targets/<name>.yaml,含 chain+token+site 三段实测值)。"""
     # 档案名只允许安全字符,防路径穿越
     if not (name and all(c.isalnum() or c in "-_" for c in name)):
         raise SystemExit(f"[!] 非法目标档案名: {name!r}(只允许字母数字-_)")
@@ -74,13 +74,13 @@ def load_config(path: str) -> dict:
     """读配置并 fail-closed 校验:缺项/非法值一律拒绝启动。
 
     两种形态:
-    - 目标档案式:config 含 `target: <名>`,chain/token/site 从 scripts/targets/<名>.yaml 合并
+    - 目标档案式:config 含 `target: <名>`,chain/token/site 从 phishlab/targets/<名>.yaml 合并
     - 兼容旧式:chain/token/site 直接内联在 config 里(不允许与 target 同时出现)
     """
     try:
         cfg = yaml.safe_load(pathlib.Path(path).read_text(encoding="utf-8"))
     except FileNotFoundError:
-        raise SystemExit(f"[!] 配置文件不存在: {path}(模板见 scripts/config.example.yaml)")
+        raise SystemExit(f"[!] 配置文件不存在: {path}(模板见 phishlab/config.example.yaml)")
     except yaml.YAMLError as exc:
         raise SystemExit(f"[!] 配置不是合法 YAML: {exc}")
     if not isinstance(cfg, dict):
@@ -88,12 +88,12 @@ def load_config(path: str) -> dict:
     if "target" in cfg:
         raw = cfg.pop("target")
         if not isinstance(raw, str) or not raw.strip():
-            raise SystemExit("[!] target 应为档案名字符串(见 scripts/targets/ 目录)")
+            raise SystemExit("[!] target 应为档案名字符串(见 phishlab/targets/ 目录)")
         target_name = raw.strip()
         inline = [s for s in TARGET_SECTIONS if s in cfg]
         if inline:
             raise SystemExit(
-                f"[!] target 与内联节 {inline} 不可同时出现(目标档案机制见 scripts/targets/)")
+                f"[!] target 与内联节 {inline} 不可同时出现(目标档案机制见 phishlab/targets/)")
         cfg.update(load_target(target_name))
     for section, keys in REQUIRED_KEYS.items():
         if section not in cfg or not isinstance(cfg[section], dict):
@@ -101,7 +101,7 @@ def load_config(path: str) -> dict:
         for key in keys:
             value = cfg[section].get(key)
             if value is None or (isinstance(value, str) and not value.strip()):
-                raise SystemExit(f"[!] 配置缺少 {section}.{key}(模板见 scripts/config.example.yaml)")
+                raise SystemExit(f"[!] 配置缺少 {section}.{key}(模板见 phishlab/config.example.yaml)")
     addr = cfg["attacker"]["address"]
     if not (addr.startswith("0x") and len(addr) == 42):
         raise SystemExit(f"[!] attacker.address 不是合法地址: {addr!r}")

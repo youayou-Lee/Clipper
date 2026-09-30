@@ -1,7 +1,7 @@
-"""钓鱼实验室服务(scripts/phish_server.py)的 L1 测试。
+"""钓鱼实验室服务(phishlab/phish_server.py)的 L1 测试。
 
 覆盖:config fail-closed 校验、事件流→待收割清单、/admin 口令门、
-单坏请求不崩服务。收割的链上行为由 tests/test_drain.py 的 Anvil e2e 覆盖。
+单坏请求不崩服务。收割的链上行为由 phishlab/tests/test_drain.py 的 Anvil e2e 覆盖。
 """
 
 import importlib.util
@@ -13,13 +13,13 @@ from http.server import ThreadingHTTPServer
 import pytest
 import yaml
 
-_ROOT = pathlib.Path(__file__).parent.parent
+_ROOT = pathlib.Path(__file__).parent.parent.parent
 _spec = importlib.util.spec_from_file_location(
-    "phish_server", _ROOT / "scripts" / "phish_server.py")
+    "phish_server", _ROOT / "phishlab" / "phish_server.py")
 phish = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(phish)
 
-EXAMPLE = _ROOT / "scripts" / "config.example.yaml"
+EXAMPLE = _ROOT / "phishlab" / "config.example.yaml"
 KEY = yaml.safe_load(EXAMPLE.read_text())["server"]["admin_key"]
 
 
@@ -216,10 +216,10 @@ class TestTargetProfiles:
         assert loaded["chain"]["chain_id"] == 31337
 
     def test_bad_permit_order_exits(self, tmp_path, monkeypatch):
-        # 密闭:不动仓库内 scripts/targets/,把 TARGETS_DIR 指向 tmp
+        # 密闭:不动仓库内 phishlab/targets/,把 TARGETS_DIR 指向 tmp
         monkeypatch.setattr(phish, "TARGETS_DIR", tmp_path)
         target = yaml.safe_load(
-            (_ROOT / "scripts" / "targets" / "anvil-default.yaml").read_text())
+            (_ROOT / "phishlab" / "targets" / "anvil-default.yaml").read_text())
         target["token"]["permit_order"] = "nonce-first"
         (tmp_path / "anvil-bad.yaml").write_text(yaml.safe_dump(target))
         cfg = self._base(target="anvil-bad")
@@ -230,7 +230,7 @@ class TestTargetProfiles:
         # 密闭:档案里有拼写笔误节(如 tokens)必须拒启,而非静默忽略
         monkeypatch.setattr(phish, "TARGETS_DIR", tmp_path)
         target = yaml.safe_load(
-            (_ROOT / "scripts" / "targets" / "anvil-default.yaml").read_text())
+            (_ROOT / "phishlab" / "targets" / "anvil-default.yaml").read_text())
         target = {"tokens": target.pop("token"), **target}   # token → tokens
         (tmp_path / "typo.yaml").write_text(yaml.safe_dump(target))
         cfg = self._base(target="typo")

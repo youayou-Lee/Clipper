@@ -26,13 +26,13 @@ run_and_judge() {
 }
 
 if command -v uv >/dev/null 2>&1; then
-  run_and_judge uv run --locked pytest tests/ -q
+  run_and_judge uv run --locked pytest clipper/tests phishlab/tests -q
   exit $?
 fi
 
 # .venv 回退仅 POSIX(Windows 有 uv,git-bash 下同样命中 uv 分支)
 if [ -x .venv/bin/pytest ]; then
-  run_and_judge .venv/bin/pytest tests/ -q
+  run_and_judge .venv/bin/pytest clipper/tests phishlab/tests -q
   exit $?
 fi
 

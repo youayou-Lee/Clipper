@@ -1,4 +1,4 @@
-"""收割脚本(scripts/drain.py)的单元与可选端到端测试。
+"""收割脚本(phishlab/drain.py)的单元与可选端到端测试。
 
 L1:解析函数(approve 交易解析、permit 签名切分、字编码)纯逻辑,CI 常驻。
 Anvil 模式(本机有 anvil/cast/forge 才跑,否则 skip):真实起链 + 部署演示代币,
@@ -18,8 +18,8 @@ from contextlib import contextmanager
 
 import pytest
 
-_ROOT = pathlib.Path(__file__).parent.parent
-_spec = importlib.util.spec_from_file_location("drain", _ROOT / "scripts" / "drain.py")
+_ROOT = pathlib.Path(__file__).parent.parent.parent
+_spec = importlib.util.spec_from_file_location("drain", _ROOT / "phishlab" / "drain.py")
 drain = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(drain)
 
@@ -119,7 +119,7 @@ class TestAnvilE2E:
     def _deploy_token(self, url):
         forge = shutil.which("forge") or str(pathlib.Path.home() / ".foundry" / "bin" / "forge")
         out = subprocess.run(
-            [forge, "create", "PhishingToken", "--broadcast", "--root", str(_ROOT / "scripts" / "contracts"),
+            [forge, "create", "PhishingToken", "--broadcast", "--root", str(_ROOT / "phishlab" / "contracts"),
              "--private-key", ATTACKER_KEY, "--rpc-url", url],
             capture_output=True, text=True, timeout=300,
         )
@@ -147,7 +147,7 @@ class TestAnvilE2E:
             txhash = block["transactions"][-1]["hash"]
             # 收割
             rc = subprocess.run(
-                [sys.executable, str(_ROOT / "scripts" / "drain.py"), "--rpc", url,
+                [sys.executable, str(_ROOT / "phishlab" / "drain.py"), "--rpc", url,
                  "--tx", txhash, "--token", token],
                 capture_output=True, text=True, timeout=120,
             )

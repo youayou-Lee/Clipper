@@ -1,9 +1,9 @@
 """Platform e2e: real clipboard read/write verification (no third-party deps).
 
 Usage (on the target machine, inside a real user session):
-  python scripts/e2e_platform.py --self-test   # write known text, read back, compare
-  python scripts/e2e_platform.py --read        # print current clipboard content
-  python scripts/e2e_platform.py --write TEXT  # put TEXT on the clipboard
+  python clipper/scripts/e2e_platform.py --self-test   # write known text, read back, compare
+  python clipper/scripts/e2e_platform.py --read        # print current clipboard content
+  python clipper/scripts/e2e_platform.py --write TEXT  # put TEXT on the clipboard
 
 Windows uses PowerShell Set-Clipboard/Get-Clipboard; macOS uses pbcopy/pbpaste;
 Linux uses xclip/wl-copy. Exit code 0 = success.

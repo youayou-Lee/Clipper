@@ -11,7 +11,7 @@ transferFrom)是真实交易,生产演练仅限 Anvil 模拟链 + 公开测试�
   2. permit:受害者签的是离线 EIP-2612 签名 -- 把签名与参数交给本脚本,脚本
      自己把 permit 交易发上链,再 transferFrom 搬空余额。
 
-用法示例见 docs/phishing-runbook.md。
+用法示例见 phishlab/docs/phishing-runbook.md。
 """
 
 import argparse

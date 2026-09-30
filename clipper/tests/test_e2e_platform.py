@@ -1,4 +1,4 @@
-"""scripts/e2e_platform.py 的单元测试(mock subprocess,不碰真实剪贴板)。"""
+"""clipper/scripts/e2e_platform.py 的单元测试(mock subprocess,不碰真实剪贴板)。"""
 
 import base64
 import importlib.util
