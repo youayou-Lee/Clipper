@@ -27,3 +27,6 @@ phishlab/contracts/out/
 
 # 钓鱼实验室:含私钥的本地配置,绝不入库
 phishlab/config.yaml
+
+# 本机演练材料(mnestic 测试图/审计库等),不入库
+lab/
