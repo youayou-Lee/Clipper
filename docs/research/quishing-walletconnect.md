@@ -26,7 +26,7 @@
 |---|---|---|
 | 案例一 clipper | 这一次转账(地址替换) | PC 剪贴板 |
 | 案例二 phishlab | 被授权的代币(approve/permit) | 点链接进假 dApp 前端 |
-| 案例三 mnestic | 整个钱包(助记词) | 恶意 App 落盘 |
+| 案例三 mnestic | 整个钱包(助记词) | 恶意 App 相册 OCR 扫描 |
 | **案例四(本调研)** | **被授权的代币(同案例二)** | **扫一个二维码** |
 
 注意案例四的"收尾"与案例二完全同构(setApprovalForAll / permit / drainer 扫款),
@@ -50,8 +50,9 @@ dApp(发起方)                          钱包(响应方)
    │        &symKey=<对称密钥>            │
    │ 2. URI 画成二维码                    │
    │        └──────受害者扫码──────┘      │
-   │ 3. 双方经 Relay 交换握手消息,        │
-   │    用各自临时密钥协商出会话密钥       │
+   │ 3. 双方经 Relay 交换握手消息(对称密钥 │
+   │    已随 URI 预共享,握手由之派生出    │
+   │    会话 topic 与密钥)                │
    │ 4. 钱包按 namespaces 同意会话        │
    │    (如允许哪些链/哪些方法)           │
    │ 5. 会话建立:dApp 可持续发请求,       │
@@ -104,17 +105,21 @@ Relay 完全合规且不知情:它只是转发端到端加密消息。攻击者�
 
 ## 3. 真实案例
 
-### 3.1 Miami 加密大会二维码空投传单(2025)
+### 3.1 加密会议线下二维码空投传单(模式性案例)
 
-线下传单印二维码,声称"独家加密空投/免费钱包",扫码进入连接钱包的钓鱼流程,
-确认授权即被 drainer 清空。此类线下投放在行业会议集中爆发,因为与会者
-"人人有钱包、人人想薅羊毛"。
+线下传单/贴纸印二维码,声称"独家加密空投/免费钱包",扫码进入连接钱包的钓鱼流程,
+确认授权即被 drainer 清空。此类投放在行业会议(参会者"人人有钱包、人人想薅羊毛")
+与停车场(假缴费二维码)集中出现,是安全厂商综述里反复描述的经典场景。
+**说明**:网传"2025 Miami 大会空投传单"未见单一权威原始报道,此处按
+Group-IB / Check Point 综述中记载的模式性案例收录,不作为独立事件引用。
+来源:[Group-IB 综述 §3.4](https://www.group-ib.com/resources/knowledge-hub/crypto-wallet-drainers/)、
+[Check Point §3.3](https://research.checkpoint.com/2024/wallet-scam-a-case-study-in-crypto-drainer-tactics/)。
 
 ### 3.2 "WalletConnect & Web3Inbox Airdrop" drainer(2024,PCrisk)
 
 直接冒用 WalletConnect 官方品牌,假借"Web3Inbox 空投"诱导用户连接钱包并签署
 恶意交易,本质是 crypto drainer。意义:连**协议品牌本身**都被拿来做信任背书。
-来源:[PCrisk 判定页](https://www.pcrisk.com/removal-guides/88252-walletconnect-web3inbox-airdrop-scam)。
+来源:[PCrisk 判定页](https://www.pcrisk.com/removal-guides/28877-walletconnect-and-web3inbox-airdrop-scam)。
 
 ### 3.3 Check Point:drainer 战术拆解(2024)
 
@@ -184,7 +189,7 @@ Group-IB 归纳的 DaaS 生态:现成钓鱼套件自带逼真假 dApp 站点、�
 | 1 | 扫码入会 | 扫码前 URI 预览;钱包对 `wc:` URI 展示完整 topic/来源 | 高:规则引擎对 URI 打分(非官方 relay 参数、自报元数据与已知品牌相似度) |
 | 2 | 会话建立 | "已连接 dApp"会话管理:定期清理、断开即失效 | 高:会话表状态机,断开后请求必被拒 |
 | 3 | 签名请求 | **三大死亡信号**:`setApprovalForAll`、陌生 spender、`permit`(EIP-712 含 spender+deadline 而无金额上限) | 高:签名请求分类器,规则可单测 |
-| 4 | 事后 | Revoke.cash / Etherscan token approval checker 定期自查 | 中:链上 allowance 查询已可复用 drain.py 的读路径 |
+| 4 | 事后 | Revoke.cash / Etherscan token approval checker 定期自查 | 中:链上 allowance 查询需新增代码,但可参考 drain.py 已有的链上交互模式 |
 | 5 | 教育 | "扫码 = 加入别人的会话"的方向性认知 | 低 |
 
 其中 **#3 签名请求分类器**最适合作为案例四的防御落点:与案例二已有的 permit
@@ -206,7 +211,7 @@ nonce/过期校验工作一脉相承,规则可写成纯函数单测,且天然产
 - [ND Labs: Is WalletConnect Safe? v2 Security Guide](https://ndlabs.dev/is-walletconnect-safe)
 - [Check Point Research: Wallet Scam — A Case Study in Crypto Drainer Tactics](https://research.checkpoint.com/2024/wallet-scam-a-case-study-in-crypto-drainer-tactics/)
 - [Group-IB: Crypto Wallet Drainers](https://www.group-ib.com/resources/knowledge-hub/crypto-wallet-drainers/)
-- [PCrisk: WalletConnect & Web3Inbox Airdrop Scam](https://www.pcrisk.com/removal-guides/88252-walletconnect-web3inbox-airdrop-scam)
+- [PCrisk: WalletConnect & Web3Inbox Airdrop Scam](https://www.pcrisk.com/removal-guides/28877-walletconnect-and-web3inbox-airdrop-scam)
 - [walletconnect-monorepo Issue #5400: phishing abuse report](https://github.com/WalletConnect/walletconnect-monorepo/issues/5400)
 - [Tangem: Scam Detection for WalletConnect dApps](https://tangem.com/en/blog/post/scam-detection-dapps/)
 - [WalletConnect 官方文档](https://docs.walletconnect.com)
